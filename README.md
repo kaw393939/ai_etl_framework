@@ -1,83 +1,47 @@
 # AI ETL Framework
 
-A high-performance, real-time AI ETL pipeline framework using Kafka, Qdrant, and Neo4j.
+A high-performance, real-time AI ETL pipeline framework.
 
-## Features
+## Development Setup
 
-- Configurable AI service integrations (Groq, OpenAI)
-- Vector database support (Weaviate)
-- Object storage integration (MinIO)
-- Extensible pipeline architecture
-- Built-in monitoring and logging
-- Docker and Kubernetes support
-
-## Quick Start
-
-1. Clone the repository:
+1. Install dependencies:
    ```bash
-   git clone https://github.com/yourusername/ai_etl_framework.git
-   cd ai_etl_framework
-   ```
-
-2. Set up your environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
    poetry install
    ```
 
-3. Configure your environment:
+2. Run tests:
    ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
+   poetry run pytest
    ```
 
-4. Run tests:
+3. View coverage report:
    ```bash
-   pytest
+   # Coverage report is generated automatically with pytest
+   # Open coverage_html/index.html in your browser
    ```
 
-## Development
+## Running Tests
 
-### Prerequisites
+- Run all tests:
+  ```bash
+  pytest
+  ```
 
-- Python 3.9+
-- Poetry
-- Docker (for local development)
-- Kubernetes (for deployment)
+- Run specific test file:
+  ```bash
+  pytest tests/test_config/test_settings.py
+  ```
 
-### Project Structure
+- Run tests by marker:
+  ```bash
+  pytest -m "not integration"  # Skip integration tests
+  ```
 
-```
-ai_etl_framework/
-├── src/                # Source code
-├── tests/              # Test suite
-├── examples/           # Usage examples
-└── deployment/         # Deployment configurations
-```
+- Run tests in parallel:
+  ```bash
+  pytest -n auto
+  ```
 
-### Running Tests
+## Coverage
 
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=src
-
-# Run specific test file
-pytest tests/test_services/test_groq.py
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
+The test suite generates both terminal and HTML coverage reports. The HTML report can be found in `coverage_html/` after running the tests.
