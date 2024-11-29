@@ -1,7 +1,12 @@
+import os
+import sys
 import pytest
 from pathlib import Path
 from typing import Generator
-import os
+
+# Add the src directory to the Python path
+src_path = str(Path(__file__).parent / "src")
+sys.path.insert(0, src_path)
 
 @pytest.fixture
 def test_env() -> Generator[None, None, None]:
