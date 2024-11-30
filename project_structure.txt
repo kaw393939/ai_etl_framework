@@ -1,0 +1,85 @@
+.
+├── .coverage
+├── .coveragerc
+├── .env
+├── .env.sample
+├── .gitignore
+├── .pytest_cache
+│   ├── .gitignore
+│   ├── CACHEDIR.TAG
+│   ├── README.md
+│   └── v
+│       └── cache
+│           ├── lastfailed
+│           ├── nodeids
+│           └── stepwise
+├── LICENSE
+├── README.md
+├── deployment
+│   ├── docker-compose.dev.yml
+│   ├── docker-compose.prod.yml
+│   ├── docker-compose.yml
+│   ├── env
+│   │   └── .env.dev
+│   └── images
+│       ├── grafana
+│       │   ├── Dockerfile
+│       │   └── config
+│       │       ├── dashboards
+│       │       │   ├── etl-infrastructure.json
+│       │       │   ├── etl-pipeline.json
+│       │       │   └── home.json
+│       │       ├── grafana.ini
+│       │       └── provisioning
+│       │           ├── dashboards
+│       │           │   └── dashboard.yaml
+│       │           └── datasources
+│       │               └── datasource.yaml
+│       ├── kafka
+│       │   ├── Dockerfile
+│       │   └── config
+│       │       ├── server.properties
+│       │       └── zookeeper.properties
+│       ├── minio
+│       │   ├── Dockerfile
+│       │   └── config
+│       │       └── minio.json
+│       └── prometheus
+│           ├── Dockerfile
+│           └── config
+│               └── prometheus.yml
+├── poetry.lock
+├── project_structure.txt
+├── pyproject.toml
+├── pytest.ini
+├── src
+│   ├── __init__.py
+│   └── ai_etl_framework
+│       ├── __init__.py
+│       ├── cli
+│       │   ├── ___init__.py
+│       │   ├── commands
+│       │   │   ├── ___init__.py
+│       │   │   ├── __init__.py
+│       │   │   └── test_load.py
+│       │   └── main.py
+│       ├── common
+│       │   └── __init__.py
+│       ├── config
+│       │   ├── __init__.py
+│       │   └── settings.py
+│       └── load_testing
+│           ├── __init__.py
+│           └── system_tester.py
+└── tests
+    ├── __init__.py
+    ├── conftest.py
+    ├── test_config
+    │   ├── __init__.py
+    │   └── test_settings.py
+    ├── test_pipeline
+    │   └── __init__.py
+    └── test_services
+        └── __init__.py
+
+29 directories, 53 files
