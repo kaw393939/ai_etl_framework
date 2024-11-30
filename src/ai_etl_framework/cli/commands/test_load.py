@@ -1,7 +1,9 @@
 import click
 import logging
-from ...tests.load_testing.system_tester import ETLSystemTester
 import sys
+
+from ai_etl_framework.load_testing.system_tester import ETLSystemTester
+
 
 @click.command()
 @click.option('--duration', '-d', default=5, help='Test duration in minutes')
