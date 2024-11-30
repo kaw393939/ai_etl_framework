@@ -26,88 +26,77 @@ A high-performance, real-time AI ETL pipeline framework designed for scalable da
 
 ```
 .
-├── .coverage
-├── .coveragerc
-├── .env
-├── .env.sample
-├── .gitignore
-├── .pytest_cache
-│   ├── .gitignore
-│   ├── CACHEDIR.TAG
-│   ├── README.md
-│   └── v
-│       └── cache
-│           ├── lastfailed
-│           ├── nodeids
-│           └── stepwise
-├── LICENSE
-├── README.md
-├── deployment
-│   ├── docker-compose.dev.yml
-│   ├── docker-compose.prod.yml
-│   ├── docker-compose.yml
+├── .coveragerc                # Configuration for coverage.py
+├── .env                        # Environment variables for development
+├── .env.sample                 # Sample environment variables template
+├── .gitignore                  # Specifies intentionally untracked files to ignore
+├── LICENSE                     # Project license information
+├── README.md                   # Project documentation and overview
+├── deployment                  # Deployment configurations and Docker setups
+│   ├── docker-compose.dev.yml  # Docker Compose configuration for development environment
+│   ├── docker-compose.prod.yml # Docker Compose configuration for production environment
+│   ├── docker-compose.yml      # Base Docker Compose configuration
 │   ├── env
-│   │   └── .env.dev
+│   │   └── .env.dev            # Environment variables specific to development
 │   └── images
 │       ├── grafana
-│       │   ├── Dockerfile
+│       │   ├── Dockerfile       # Dockerfile for Grafana service
 │       │   └── config
 │       │       ├── dashboards
-│       │       │   ├── etl-infrastructure.json
-│       │       │   ├── etl-pipeline.json
-│       │       │   └── home.json
-│       │       ├── grafana.ini
+│       │       │   ├── etl-infrastructure.json # Grafana dashboard configuration for ETL infrastructure
+│       │       │   ├── etl-pipeline.json       # Grafana dashboard configuration for ETL pipeline
+│       │       │   └── home.json                # Grafana home dashboard configuration
+│       │       ├── grafana.ini                 # Main Grafana configuration file
 │       │       └── provisioning
 │       │           ├── dashboards
-│       │           │   └── dashboard.yaml
+│       │           │   └── dashboard.yaml        # Grafana dashboard provisioning configuration
 │       │           └── datasources
-│       │               └── datasource.yaml
+│       │               └── datasource.yaml       # Grafana datasource provisioning configuration
 │       ├── kafka
-│       │   ├── Dockerfile
+│       │   ├── Dockerfile       # Dockerfile for Kafka service
 │       │   └── config
-│       │       ├── server.properties
-│       │       └── zookeeper.properties
+│       │       ├── server.properties      # Kafka server configuration
+│       │       └── zookeeper.properties   # Zookeeper configuration for Kafka
 │       ├── minio
-│       │   ├── Dockerfile
+│       │   ├── Dockerfile       # Dockerfile for MinIO service
 │       │   └── config
-│       │       └── minio.json
+│       │       └── minio.json           # MinIO server configuration
 │       └── prometheus
-│           ├── Dockerfile
+│           ├── Dockerfile       # Dockerfile for Prometheus service
 │           └── config
-│               └── prometheus.yml
-├── poetry.lock
-├── project_structure.txt
-├── pyproject.toml
-├── pytest.ini
-├── src
-│   ├── __init__.py
+│               └── prometheus.yml      # Prometheus server configuration
+├── poetry.lock                 # Locked dependencies for Poetry
+├── pyproject.toml              # Poetry project configuration and dependencies
+├── pytest.ini                  # Pytest configuration settings
+├── src                         # Source code for the AI ETL Framework
+│   ├── __init__.py             # Initializes the src package
 │   └── ai_etl_framework
-│       ├── __init__.py
+│       ├── __init__.py         # Initializes the ai_etl_framework package
 │       ├── cli
-│       │   ├── ___init__.py
+│       │   ├── ___init__.py     # Initializes the CLI module
 │       │   ├── commands
-│       │   │   ├── ___init__.py
-│       │   │   ├── __init__.py
-│       │   │   └── test_load.py
-│       │   └── main.py
+│       │   │   ├── ___init__.py # Initializes the commands submodule
+│       │   │   ├── __init__.py  # Initializes the commands submodule
+│       │   │   └── test_load.py  # CLI command for testing load operations
+│       │   └── main.py          # Entry point for the CLI interface
 │       ├── common
-│       │   └── __init__.py
+│       │   └── __init__.py      # Initializes the common utilities module
 │       ├── config
-│       │   ├── __init__.py
-│       │   └── settings.py
+│       │   ├── __init__.py      # Initializes the config module
+│       │   └── settings.py      # Configuration settings for the framework
 │       └── load_testing
-│           ├── __init__.py
-│           └── system_tester.py
-└── tests
-    ├── __init__.py
-    ├── conftest.py
+│           ├── __init__.py      # Initializes the load_testing module
+│           └── system_tester.py # Scripts and tools for system testing
+└── tests                        # Test suites for the AI ETL Framework
+    ├── __init__.py             # Initializes the tests package
+    ├── conftest.py             # Pytest fixtures and configurations
     ├── test_config
-    │   ├── __init__.py
-    │   └── test_settings.py
+    │   ├── __init__.py         # Initializes the test_config module
+    │   └── test_settings.py    # Tests for configuration settings
     ├── test_pipeline
-    │   └── __init__.py
+    │   └── __init__.py         # Initializes the test_pipeline module
     └── test_services
-        └── __init__.py
+        └── __init__.py         # Initializes the test_services module
 
 ```
 
