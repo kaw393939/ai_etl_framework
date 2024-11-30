@@ -1,0 +1,26 @@
+{
+    "version": "33",
+    "credential": {
+        "accessKey": "minioadmin",
+        "secretKey": "minioadmin"
+    },
+    "region": "",
+    "browser": "on",
+    "worm": "off",
+    "domain": "",
+    "storageclass": {
+        "standard": "",
+        "rrs": ""
+    },
+    "cache": {
+        "drives": [],
+        "exclude": [],
+        "expiry": 90,
+        "maxuse": 80
+    },
+    "compress": {
+        "enabled": false,
+        "extensions": [".txt", ".log", ".csv"],
+        "mime-types": ["text/*", "application/json"]
+    }
+}
