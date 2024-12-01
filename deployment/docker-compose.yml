@@ -16,6 +16,7 @@ services:
       APP_PORT: 8000
     depends_on:
       - prometheus
+      - cadvisor          # Ensure Extractor starts after Prometheus and cAdvisor
     networks:
       - etl_network
     healthcheck:
@@ -87,6 +88,8 @@ services:
       GF_DASHBOARDS_MIN_REFRESH_INTERVAL: "5s"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./images/grafana/config/provisioning:/etc/grafana/provisioning
+      - ./images/grafana/config/dashboards:/etc/grafana/dashboards
     depends_on:
       - prometheus
     healthcheck:
@@ -111,6 +114,20 @@ services:
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - etl_network
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
     networks:
       - etl_network
     restart: unless-stopped

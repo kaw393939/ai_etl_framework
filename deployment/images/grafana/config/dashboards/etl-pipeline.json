@@ -8,6 +8,10 @@
   "links": [],
   "panels": [
     {
+      "title": "Pipeline Processing Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -23,30 +27,16 @@
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "fillOpacity": 20,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
             "spanNulls": true
           }
         },
         "thresholds": {
           "mode": "absolute",
           "steps": [
-            {
-              "color": "green",
-              "value": null
-            }
+            { "color": "green", "value": null }
           ]
         }
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
       "options": {
         "legend": {
           "calcs": ["mean", "max"],
@@ -65,11 +55,13 @@
           "legendFormat": "Documents/sec",
           "refId": "A"
         }
-      ],
-      "title": "Pipeline Processing Rate",
-      "type": "timeseries"
+      ]
     },
     {
+      "title": "Pipeline Success Rate",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -80,36 +72,21 @@
           "color": {
             "mode": "thresholds"
           },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "orange", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          },
           "custom": {
             "drawStyle": "gauge",
             "fillOpacity": 50
           }
         },
-        "thresholds": {
-          "mode": "absolute",
-          "steps": [
-            {
-              "color": "red",
-              "value": null
-            },
-            {
-              "color": "orange",
-              "value": 80
-            },
-            {
-              "color": "green",
-              "value": 95
-            }
-          ]
-        }
+        "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 2,
       "options": {
         "orientation": "auto",
         "showThresholdLabels": false,
@@ -120,11 +97,13 @@
           "expr": "100 * (1 - (rate(etl_processing_errors_total[5m]) / rate(etl_processed_documents_total[5m])))",
           "refId": "A"
         }
-      ],
-      "title": "Pipeline Success Rate",
-      "type": "gauge"
+      ]
     },
     {
+      "title": "Stage Processing Times",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "id": 3,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -146,20 +125,10 @@
         "thresholds": {
           "mode": "absolute",
           "steps": [
-            {
-              "color": "green",
-              "value": null
-            }
+            { "color": "green", "value": null }
           ]
         }
       },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 8
-      },
-      "id": 3,
       "options": {
         "legend": {
           "calcs": ["mean", "max"],
@@ -178,11 +147,13 @@
           "legendFormat": "{{stage}}",
           "refId": "A"
         }
-      ],
-      "title": "Stage Processing Times",
-      "type": "timeseries"
+      ]
     },
     {
+      "title": "Extractor Request Count",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 4,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -204,20 +175,10 @@
         "thresholds": {
           "mode": "absolute",
           "steps": [
-            {
-              "color": "green",
-              "value": null
-            }
+            { "color": "green", "value": null }
           ]
         }
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "id": 4,
       "options": {
         "legend": {
           "calcs": ["mean", "max"],
@@ -236,11 +197,13 @@
           "legendFormat": "Requests",
           "refId": "A"
         }
-      ],
-      "title": "Extractor Request Count",
-      "type": "timeseries"
+      ]
     },
     {
+      "title": "Extractor Response Time",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 5,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -262,20 +225,10 @@
         "thresholds": {
           "mode": "absolute",
           "steps": [
-            {
-              "color": "green",
-              "value": null
-            }
+            { "color": "green", "value": null }
           ]
         }
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "id": 5,
       "options": {
         "legend": {
           "calcs": ["mean", "max"],
@@ -294,9 +247,7 @@
           "legendFormat": "Response Time",
           "refId": "A"
         }
-      ],
-      "title": "Extractor Response Time",
-      "type": "timeseries"
+      ]
     }
   ],
   "refresh": "5s",
@@ -312,7 +263,8 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "ETL Pipeline Monitoring",
+  "title": "ETL Pipeline Dashboard",
   "uid": "etl-pipeline",
-  "version": 2
+  "version": 2,
+  "weekStart": ""
 }

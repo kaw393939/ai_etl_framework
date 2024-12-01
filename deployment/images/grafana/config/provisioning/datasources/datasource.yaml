@@ -15,7 +15,6 @@ datasources:
       minRefreshInterval: "5s"       # Minimum refresh interval for dashboards
       tlsSkipVerify: false           # Ensure TLS is verified, unless necessary to skip
       alertingEnabled: true          # Ensure Grafana alerting is enabled
-    secureJsonData:                  # Secure storage for sensitive data
-      bearerToken: "${PROM_BEARER_TOKEN}" # Use an environment variable for the token (if applicable)
+    # Removed bearerToken as it is no longer required
     version: 1
     uid: prometheus                  # Unique ID for the datasource (keep it consistent for provisioning)

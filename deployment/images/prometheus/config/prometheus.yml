@@ -1,52 +1,81 @@
----
 global:
-  scrape_interval: 15s       # By default, scrape targets every 15 seconds.
+  scrape_interval: 15s       # Scrape targets every 15 seconds.
   evaluation_interval: 15s  # Evaluate rules every 15 seconds.
 
 scrape_configs:
-  - job_name: 'prometheus'   # The job name for Prometheus's own metrics.
+  # -------- Prometheus Itself --------
+  - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:9090']  # Prometheus server itself.
+      - targets: ['localhost:9090']
         labels:
-          environment: 'production'   # Custom label for this job.
+          environment: 'production'
 
-  - job_name: 'minio'        # Job name for MinIO metrics.
-    metrics_path: /minio/v2/metrics/cluster
+  # -------- MinIO Metrics --------
+  - job_name: 'minio'
+    metrics_path: /minio/prometheus/metrics
     scheme: http
-    bearer_token: minioadmin   # Authentication token for MinIO.
+    static_configs:
+      - targets: ['minio:9000']
+        labels:
+          service: 'minio'
     tls_config:
-      insecure_skip_verify: true  
-    static_configs:
-      - targets: ['minio:9000']   # MinIO service address.
-        labels:
-          service: 'minio'         # Custom label for MinIO.
+      insecure_skip_verify: true
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: 'minio-cluster'  # Rename the instance label.
+        replacement: 'minio-cluster'  # Use fixed if single instance.
+        action: replace
 
-  - job_name: 'node_exporter'  # Job name for Node Exporter.
+  # -------- Node Exporter Metrics --------
+  - job_name: 'node_exporter'
     static_configs:
-      - targets: ['node-exporter:9100']  # Node Exporter service address.
+      - targets: ['node-exporter:9100']
         labels:
-          role: 'node_exporter'           # Custom label for Node Exporter.
-  - job_name: 'grafana'         # Job name for Grafana metrics.
-    static_configs:
-      - targets: ['grafana:3000']  # Grafana service address.
-        labels:
-          service: 'grafana'         # Custom label for Grafana.
+          role: 'node_exporter'
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: 'grafana_dashboard'  # Rename the instance label.
+        replacement: 'node-exporter'
+        action: replace
 
-  - job_name: 'extractor'       # Job name for Extractor service metrics.
-    metrics_path: /metrics       # Metrics endpoint for Extractor.
+  # -------- Grafana Metrics --------
+  - job_name: 'grafana'
+    metrics_path: /metrics
+    scheme: http
     static_configs:
-      - targets: ['extractor:8000']  # Extractor service address.
+      - targets: ['grafana:3000']
         labels:
-          service: 'extractor_service'  # Custom label for Extractor.
+          service: 'grafana'
+    tls_config:
+      insecure_skip_verify: true
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
-        replacement: 'extractor_service'  # Rename the instance label.
+        replacement: 'grafana_dashboard'
+        action: replace
+
+  # -------- Extractor Service Metrics --------
+  - job_name: 'extractor'
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ['extractor:8000']
+        labels:
+          service: 'extractor_service'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'extractor_service'
+        action: replace
+
+  # -------- cAdvisor Metrics --------
+  - job_name: 'cadvisor'
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ['cadvisor:8080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'cadvisor'
+        action: replace

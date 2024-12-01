@@ -15,7 +15,7 @@ providers:
       editable: true                 # Dashboards can be edited for customization
       tags:
         - "etl"
-        - "monitoring"              # Add relevant tags for dashboard discoverability
+        - "monitoring"               # Add relevant tags for dashboard discoverability
       timezone: "utc"                # Set timezone for consistency across teams
       refresh: "15s"                 # Default refresh interval for dashboard panels
       templatingEnabled: true        # Enable variables for dynamic dashboards
