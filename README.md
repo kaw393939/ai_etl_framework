@@ -398,9 +398,3 @@ scrape_configs:
         target_label: instance
         replacement: 'extractor_service'
 ```
-
----
-
-This enhanced `README.md` now provides a clear, structured, and comprehensive guide to your AI ETL Framework. It ensures that all Docker commands are well-formatted and easy to follow, removes unnecessary references to Kubernetes, and includes additional sections for load testing and Grafana provisioning to give users a complete understanding of the project.
-
-Feel free to further customize it based on any additional specific requirements or details of your project!
