@@ -1,5 +1,3 @@
-# src/ai_etl_framework/config/settings.py
-
 from enum import Enum
 from pydantic import Field, conint
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,6 +28,13 @@ class ServiceConfig(BaseSettings):
     # Prometheus settings with constrained port
     prometheus_port: conint(gt=0, lt=65536) = Field(default=9090)
     
+    # FastAPI settings
+    app_title: str = Field(default="ETL Extractor Service")
+    app_description: str = Field(default="Service to process data for the ETL pipeline.")
+    app_version: str = Field(default="1.0.0")
+    app_host: str = Field(default="0.0.0.0")
+    app_port: conint(gt=0, lt=65536) = Field(default=8000)
+
     model_config = SettingsConfigDict(
         env_prefix='',
         case_sensitive=False,

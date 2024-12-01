@@ -6,10 +6,16 @@ providers:
     folder: 'ETL Monitoring'
     type: file
     disableDeletion: false
-    updateIntervalSeconds: 10
-    allowUiUpdates: true
+    updateIntervalSeconds: 30        # Reduce frequent reloads; balance between updates and performance
+    allowUiUpdates: true             # Allow updates through UI if necessary
     options:
-      path: /etc/grafana/dashboards
-      foldersFromFilesStructure: true
+      path: /etc/grafana/dashboards  # Location of the dashboard JSON files
+      foldersFromFilesStructure: true # Organize dashboards based on the folder structure
     defaults:
-      editable: true
+      editable: true                 # Dashboards can be edited for customization
+      tags:
+        - "etl"
+        - "monitoring"              # Add relevant tags for dashboard discoverability
+      timezone: "utc"                # Set timezone for consistency across teams
+      refresh: "15s"                 # Default refresh interval for dashboard panels
+      templatingEnabled: true        # Enable variables for dynamic dashboards

@@ -99,7 +99,10 @@ A high-performance, real-time AI ETL pipeline framework designed for scalable da
         └── __init__.py         # Initializes the test_services module
 
 ```
-
+## Load test
+```bash
+poetry run locust
+```
 ## Quick Start
 
 1. **Install Dependencies**
@@ -109,11 +112,52 @@ A high-performance, real-time AI ETL pipeline framework designed for scalable da
 
 2. **Start Infrastructure Services**
    ```bash
-   cd deployment
-   docker-compose up -d
+   
+# Start all services with build
+docker-compose -f deployment/docker-compose.yml up --build
+
+# Start all services in detached mode
+docker-compose -f deployment/docker-compose.yml up --build -d
+
+# Stop all running services
+docker-compose -f deployment/docker-compose.yml stop
+
+# Stop all services and remove containers, networks, and volumes
+docker-compose -f deployment/docker-compose.yml down
+
+# View real-time logs for all services
+docker-compose -f deployment/docker-compose.yml logs -f
+
+# View real-time logs for a specific service (e.g., extractor)
+docker-compose -f deployment/docker-compose.yml logs -f extractor
+
+# Rebuild and restart a specific service (e.g., extractor)
+docker-compose -f deployment/docker-compose.yml up --build extractor
+
+# Check the status and health of all services
+docker ps
+
+# Execute a command inside a running service container (e.g., extractor)
+docker exec -it <container_name> bash
+
+# Remove all unused Docker resources
+docker system prune -af
+
+# Inspect details about a specific container
+docker inspect <container_name>
+
+# Monitor resource usage for running containers
+docker stats
+
+# Build Docker images without starting services
+docker-compose -f deployment/docker-compose.yml build
+
+# Start only Prometheus and Grafana
+docker-compose -f deployment/docker-compose.yml up --build prometheus grafana
+
    ```
 
-3. **Access Services**
+1. **Access Services**
    - MinIO Console: http://localhost:9001 (login: minioadmin/minioadmin)
    - Prometheus: http://localhost:9090
    - Grafana: http://localhost:3000 (login: admin/admin)

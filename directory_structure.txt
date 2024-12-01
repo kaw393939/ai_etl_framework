@@ -1,0 +1,859 @@
+.
+├── .git
+│   ├── branches
+│   ├── hooks
+│   ├── info
+│   ├── logs
+│   │   └── refs
+│   │       ├── heads
+│   │       └── remotes
+│   │           └── origin
+│   ├── objects
+│   │   ├── 05
+│   │   ├── 07
+│   │   ├── 08
+│   │   ├── 0c
+│   │   ├── 0d
+│   │   ├── 10
+│   │   ├── 11
+│   │   ├── 15
+│   │   ├── 1b
+│   │   ├── 1c
+│   │   ├── 1d
+│   │   ├── 1e
+│   │   ├── 1f
+│   │   ├── 22
+│   │   ├── 23
+│   │   ├── 29
+│   │   ├── 2e
+│   │   ├── 2f
+│   │   ├── 30
+│   │   ├── 31
+│   │   ├── 32
+│   │   ├── 33
+│   │   ├── 35
+│   │   ├── 37
+│   │   ├── 39
+│   │   ├── 3a
+│   │   ├── 3d
+│   │   ├── 3e
+│   │   ├── 3f
+│   │   ├── 43
+│   │   ├── 46
+│   │   ├── 48
+│   │   ├── 49
+│   │   ├── 4d
+│   │   ├── 4e
+│   │   ├── 4f
+│   │   ├── 55
+│   │   ├── 57
+│   │   ├── 58
+│   │   ├── 5a
+│   │   ├── 63
+│   │   ├── 65
+│   │   ├── 66
+│   │   ├── 67
+│   │   ├── 69
+│   │   ├── 6a
+│   │   ├── 6b
+│   │   ├── 6e
+│   │   ├── 78
+│   │   ├── 79
+│   │   ├── 7a
+│   │   ├── 7b
+│   │   ├── 7c
+│   │   ├── 7d
+│   │   ├── 7e
+│   │   ├── 81
+│   │   ├── 89
+│   │   ├── 8a
+│   │   ├── 8b
+│   │   ├── 8f
+│   │   ├── 91
+│   │   ├── 92
+│   │   ├── 93
+│   │   ├── 95
+│   │   ├── 97
+│   │   ├── 9d
+│   │   ├── a0
+│   │   ├── a4
+│   │   ├── a6
+│   │   ├── a7
+│   │   ├── a9
+│   │   ├── aa
+│   │   ├── ad
+│   │   ├── b0
+│   │   ├── b3
+│   │   ├── b5
+│   │   ├── b7
+│   │   ├── b9
+│   │   ├── bf
+│   │   ├── c4
+│   │   ├── c5
+│   │   ├── c7
+│   │   ├── c9
+│   │   ├── cc
+│   │   ├── cd
+│   │   ├── d0
+│   │   ├── d3
+│   │   ├── d4
+│   │   ├── d5
+│   │   ├── db
+│   │   ├── dd
+│   │   ├── df
+│   │   ├── e1
+│   │   ├── e2
+│   │   ├── e3
+│   │   ├── e6
+│   │   ├── ee
+│   │   ├── f1
+│   │   ├── f2
+│   │   ├── f6
+│   │   ├── f8
+│   │   ├── fb
+│   │   ├── fd
+│   │   ├── info
+│   │   └── pack
+│   └── refs
+│       ├── heads
+│       ├── remotes
+│       │   └── origin
+│       └── tags
+├── .pytest_cache
+│   └── v
+│       └── cache
+├── .venv
+│   ├── bin
+│   └── lib
+│       └── python3.10
+│           └── site-packages
+│               ├── Authlib-1.3.2.dist-info
+│               ├── Crypto
+│               │   ├── Cipher
+│               │   │   └── __pycache__
+│               │   ├── Hash
+│               │   │   └── __pycache__
+│               │   ├── IO
+│               │   ├── Math
+│               │   ├── Protocol
+│               │   │   └── __pycache__
+│               │   ├── PublicKey
+│               │   ├── Random
+│               │   │   └── __pycache__
+│               │   ├── SelfTest
+│               │   │   ├── Cipher
+│               │   │   ├── Hash
+│               │   │   ├── IO
+│               │   │   ├── Math
+│               │   │   ├── Protocol
+│               │   │   ├── PublicKey
+│               │   │   ├── Random
+│               │   │   ├── Signature
+│               │   │   └── Util
+│               │   ├── Signature
+│               │   ├── Util
+│               │   │   └── __pycache__
+│               │   └── __pycache__
+│               ├── __pycache__
+│               ├── _argon2_cffi_bindings
+│               │   └── __pycache__
+│               ├── _distutils_hack
+│               │   └── __pycache__
+│               ├── _pytest
+│               │   ├── __pycache__
+│               │   ├── _code
+│               │   │   └── __pycache__
+│               │   ├── _io
+│               │   │   └── __pycache__
+│               │   ├── _py
+│               │   │   └── __pycache__
+│               │   ├── assertion
+│               │   │   └── __pycache__
+│               │   ├── config
+│               │   │   └── __pycache__
+│               │   └── mark
+│               │       └── __pycache__
+│               ├── ai_etl_framework-0.1.0.dist-info
+│               ├── annotated_types
+│               │   └── __pycache__
+│               ├── annotated_types-0.7.0.dist-info
+│               │   └── licenses
+│               ├── apiclient
+│               ├── argon2
+│               │   └── __pycache__
+│               ├── argon2_cffi-23.1.0.dist-info
+│               │   └── licenses
+│               ├── argon2_cffi_bindings-21.2.0.dist-info
+│               ├── authlib
+│               │   ├── common
+│               │   ├── integrations
+│               │   │   ├── base_client
+│               │   │   ├── django_client
+│               │   │   ├── django_oauth1
+│               │   │   ├── django_oauth2
+│               │   │   ├── flask_client
+│               │   │   ├── flask_oauth1
+│               │   │   ├── flask_oauth2
+│               │   │   ├── httpx_client
+│               │   │   ├── requests_client
+│               │   │   ├── sqla_oauth2
+│               │   │   └── starlette_client
+│               │   ├── jose
+│               │   │   ├── drafts
+│               │   │   ├── rfc7515
+│               │   │   ├── rfc7516
+│               │   │   ├── rfc7517
+│               │   │   ├── rfc7518
+│               │   │   ├── rfc7519
+│               │   │   └── rfc8037
+│               │   ├── oauth1
+│               │   │   └── rfc5849
+│               │   ├── oauth2
+│               │   │   ├── rfc6749
+│               │   │   │   └── grants
+│               │   │   ├── rfc6750
+│               │   │   ├── rfc7009
+│               │   │   ├── rfc7521
+│               │   │   ├── rfc7523
+│               │   │   ├── rfc7591
+│               │   │   ├── rfc7592
+│               │   │   ├── rfc7636
+│               │   │   ├── rfc7662
+│               │   │   ├── rfc8414
+│               │   │   ├── rfc8628
+│               │   │   ├── rfc8693
+│               │   │   └── rfc9068
+│               │   └── oidc
+│               │       ├── core
+│               │       │   └── grants
+│               │       └── discovery
+│               ├── black
+│               ├── black-23.12.1.dist-info
+│               │   └── licenses
+│               ├── blackd
+│               ├── blib2to3
+│               │   └── pgen2
+│               ├── buf
+│               │   └── validate
+│               │       └── priv
+│               ├── cachetools
+│               ├── cachetools-5.5.0.dist-info
+│               ├── certifi
+│               │   └── __pycache__
+│               ├── certifi-2024.8.30.dist-info
+│               ├── cffi
+│               │   └── __pycache__
+│               ├── cffi-1.17.1.dist-info
+│               ├── charset_normalizer
+│               │   └── cli
+│               ├── charset_normalizer-3.4.0.dist-info
+│               ├── click
+│               │   └── __pycache__
+│               ├── click-8.1.7.dist-info
+│               ├── coverage
+│               │   ├── __pycache__
+│               │   └── htmlfiles
+│               ├── coverage-7.6.8.dist-info
+│               ├── cryptography
+│               │   ├── hazmat
+│               │   │   ├── backends
+│               │   │   │   └── openssl
+│               │   │   ├── bindings
+│               │   │   │   ├── _rust
+│               │   │   │   │   └── openssl
+│               │   │   │   └── openssl
+│               │   │   ├── decrepit
+│               │   │   │   └── ciphers
+│               │   │   └── primitives
+│               │   │       ├── asymmetric
+│               │   │       ├── ciphers
+│               │   │       ├── kdf
+│               │   │       ├── serialization
+│               │   │       └── twofactor
+│               │   └── x509
+│               ├── cryptography-44.0.0.dist-info
+│               │   └── licenses
+│               ├── dotenv
+│               │   └── __pycache__
+│               ├── exceptiongroup
+│               │   └── __pycache__
+│               ├── exceptiongroup-1.2.2.dist-info
+│               ├── execnet
+│               │   ├── __pycache__
+│               │   └── script
+│               ├── execnet-2.1.1.dist-info
+│               │   └── licenses
+│               ├── google
+│               │   ├── api
+│               │   ├── api_core
+│               │   │   ├── future
+│               │   │   ├── gapic_v1
+│               │   │   ├── operations_v1
+│               │   │   │   └── transports
+│               │   │   └── retry
+│               │   ├── auth
+│               │   │   ├── aio
+│               │   │   │   └── transport
+│               │   │   ├── compute_engine
+│               │   │   ├── crypt
+│               │   │   └── transport
+│               │   ├── cloud
+│               │   │   └── location
+│               │   ├── gapic
+│               │   │   └── metadata
+│               │   ├── logging
+│               │   │   └── type
+│               │   ├── longrunning
+│               │   ├── oauth2
+│               │   ├── protobuf
+│               │   │   ├── compiler
+│               │   │   ├── internal
+│               │   │   ├── pyext
+│               │   │   └── util
+│               │   ├── rpc
+│               │   │   └── context
+│               │   └── type
+│               ├── google-stubs
+│               │   └── protobuf
+│               │       ├── compiler
+│               │       ├── internal
+│               │       └── util
+│               ├── google_api_core-2.23.0.dist-info
+│               ├── google_api_python_client-2.154.0.dist-info
+│               ├── google_auth-2.36.0.dist-info
+│               ├── google_auth_httplib2-0.2.0.dist-info
+│               ├── google_cloud-0.34.0.dist-info
+│               ├── googleapiclient
+│               │   └── discovery_cache
+│               │       └── documents
+│               ├── googleapis_common_protos-1.66.0.dist-info
+│               ├── groq
+│               │   └── cloud
+│               │       ├── core
+│               │       └── openai
+│               ├── groq-0.3.0.dist-info
+│               ├── grpc
+│               │   ├── _cython
+│               │   │   ├── _credentials
+│               │   │   └── _cygrpc
+│               │   ├── aio
+│               │   ├── beta
+│               │   ├── experimental
+│               │   │   └── aio
+│               │   └── framework
+│               │       ├── common
+│               │       ├── foundation
+│               │       └── interfaces
+│               │           ├── base
+│               │           └── face
+│               ├── grpc-stubs
+│               │   └── aio
+│               ├── grpc_channelz-stubs
+│               │   └── v1
+│               ├── grpc_health-stubs
+│               │   └── v1
+│               ├── grpc_reflection-stubs
+│               │   └── v1alpha
+│               ├── grpc_status-stubs
+│               ├── grpc_stubs-1.53.0.5.dist-info
+│               ├── grpcio-1.68.0.dist-info
+│               ├── httplib2
+│               ├── httplib2-0.22.0.dist-info
+│               ├── idna
+│               ├── idna-3.10.dist-info
+│               ├── iniconfig
+│               │   └── __pycache__
+│               ├── iniconfig-2.0.0.dist-info
+│               │   └── licenses
+│               ├── isort
+│               │   ├── _vendored
+│               │   │   └── tomli
+│               │   ├── deprecated
+│               │   └── stdlibs
+│               ├── isort-5.13.2.dist-info
+│               ├── minio
+│               │   ├── __pycache__
+│               │   └── credentials
+│               │       └── __pycache__
+│               ├── minio-7.2.12.dist-info
+│               ├── mypy
+│               │   ├── dmypy
+│               │   ├── plugins
+│               │   ├── server
+│               │   ├── test
+│               │   │   └── meta
+│               │   ├── typeshed
+│               │   │   ├── stdlib
+│               │   │   │   ├── _typeshed
+│               │   │   │   ├── asyncio
+│               │   │   │   ├── collections
+│               │   │   │   ├── concurrent
+│               │   │   │   │   └── futures
+│               │   │   │   ├── ctypes
+│               │   │   │   ├── curses
+│               │   │   │   ├── dbm
+│               │   │   │   ├── distutils
+│               │   │   │   │   └── command
+│               │   │   │   ├── email
+│               │   │   │   │   └── mime
+│               │   │   │   ├── encodings
+│               │   │   │   ├── ensurepip
+│               │   │   │   ├── html
+│               │   │   │   ├── http
+│               │   │   │   ├── importlib
+│               │   │   │   │   ├── metadata
+│               │   │   │   │   └── resources
+│               │   │   │   ├── json
+│               │   │   │   ├── lib2to3
+│               │   │   │   │   ├── fixes
+│               │   │   │   │   └── pgen2
+│               │   │   │   ├── logging
+│               │   │   │   ├── msilib
+│               │   │   │   ├── multiprocessing
+│               │   │   │   │   └── dummy
+│               │   │   │   ├── os
+│               │   │   │   ├── pydoc_data
+│               │   │   │   ├── pyexpat
+│               │   │   │   ├── sqlite3
+│               │   │   │   ├── sys
+│               │   │   │   ├── tkinter
+│               │   │   │   ├── unittest
+│               │   │   │   ├── urllib
+│               │   │   │   ├── venv
+│               │   │   │   ├── wsgiref
+│               │   │   │   ├── xml
+│               │   │   │   │   ├── dom
+│               │   │   │   │   ├── etree
+│               │   │   │   │   ├── parsers
+│               │   │   │   │   │   └── expat
+│               │   │   │   │   └── sax
+│               │   │   │   ├── xmlrpc
+│               │   │   │   ├── zipfile
+│               │   │   │   └── zoneinfo
+│               │   │   └── stubs
+│               │   │       └── mypy-extensions
+│               │   └── xml
+│               ├── mypy-1.13.0.dist-info
+│               ├── mypy_extensions-1.0.0.dist-info
+│               ├── mypyc
+│               │   ├── analysis
+│               │   ├── codegen
+│               │   ├── doc
+│               │   ├── external
+│               │   │   └── googletest
+│               │   │       ├── include
+│               │   │       │   └── gtest
+│               │   │       │       └── internal
+│               │   │       │           └── custom
+│               │   │       ├── make
+│               │   │       └── src
+│               │   ├── ir
+│               │   ├── irbuild
+│               │   ├── lib-rt
+│               │   ├── lower
+│               │   ├── primitives
+│               │   ├── test
+│               │   ├── test-data
+│               │   │   ├── driver
+│               │   │   └── fixtures
+│               │   └── transform
+│               ├── numpy
+│               │   ├── __pycache__
+│               │   ├── _core
+│               │   │   ├── __pycache__
+│               │   │   ├── include
+│               │   │   │   └── numpy
+│               │   │   │       └── random
+│               │   │   ├── lib
+│               │   │   │   ├── npy-pkg-config
+│               │   │   │   └── pkgconfig
+│               │   │   └── tests
+│               │   │       ├── data
+│               │   │       └── examples
+│               │   │           ├── cython
+│               │   │           └── limited_api
+│               │   ├── _pyinstaller
+│               │   │   └── tests
+│               │   ├── _typing
+│               │   │   └── __pycache__
+│               │   ├── _utils
+│               │   │   └── __pycache__
+│               │   ├── char
+│               │   ├── compat
+│               │   │   └── tests
+│               │   ├── core
+│               │   ├── distutils
+│               │   │   ├── __pycache__
+│               │   │   ├── checks
+│               │   │   ├── command
+│               │   │   ├── fcompiler
+│               │   │   ├── mingw
+│               │   │   └── tests
+│               │   ├── doc
+│               │   ├── f2py
+│               │   │   ├── _backends
+│               │   │   ├── src
+│               │   │   └── tests
+│               │   │       └── src
+│               │   │           ├── abstract_interface
+│               │   │           ├── array_from_pyobj
+│               │   │           ├── assumed_shape
+│               │   │           ├── block_docstring
+│               │   │           ├── callback
+│               │   │           ├── cli
+│               │   │           ├── common
+│               │   │           ├── crackfortran
+│               │   │           ├── f2cmap
+│               │   │           ├── isocintrin
+│               │   │           ├── kind
+│               │   │           ├── mixed
+│               │   │           ├── modules
+│               │   │           │   ├── gh25337
+│               │   │           │   └── gh26920
+│               │   │           ├── negative_bounds
+│               │   │           ├── parameter
+│               │   │           ├── quoted_character
+│               │   │           ├── regression
+│               │   │           ├── return_character
+│               │   │           ├── return_complex
+│               │   │           ├── return_integer
+│               │   │           ├── return_logical
+│               │   │           ├── return_real
+│               │   │           ├── size
+│               │   │           ├── string
+│               │   │           └── value_attrspec
+│               │   ├── fft
+│               │   │   └── tests
+│               │   ├── lib
+│               │   │   ├── __pycache__
+│               │   │   └── tests
+│               │   │       └── data
+│               │   ├── linalg
+│               │   │   ├── __pycache__
+│               │   │   └── tests
+│               │   ├── ma
+│               │   │   └── tests
+│               │   ├── matrixlib
+│               │   │   ├── __pycache__
+│               │   │   └── tests
+│               │   ├── polynomial
+│               │   │   └── tests
+│               │   ├── random
+│               │   │   ├── __pycache__
+│               │   │   ├── _examples
+│               │   │   │   ├── cffi
+│               │   │   │   ├── cython
+│               │   │   │   └── numba
+│               │   │   ├── lib
+│               │   │   └── tests
+│               │   │       └── data
+│               │   ├── rec
+│               │   ├── strings
+│               │   ├── testing
+│               │   │   ├── _private
+│               │   │   └── tests
+│               │   ├── tests
+│               │   └── typing
+│               │       └── tests
+│               │           └── data
+│               │               ├── fail
+│               │               ├── misc
+│               │               ├── pass
+│               │               └── reveal
+│               ├── numpy-2.1.3.dist-info
+│               ├── numpy.libs
+│               ├── packaging
+│               │   └── licenses
+│               ├── packaging-24.2.dist-info
+│               ├── pathspec
+│               │   └── patterns
+│               ├── pathspec-0.12.1.dist-info
+│               ├── pip
+│               │   ├── _internal
+│               │   │   ├── cli
+│               │   │   ├── commands
+│               │   │   ├── distributions
+│               │   │   ├── index
+│               │   │   ├── locations
+│               │   │   ├── metadata
+│               │   │   │   └── importlib
+│               │   │   ├── models
+│               │   │   ├── network
+│               │   │   ├── operations
+│               │   │   │   ├── build
+│               │   │   │   └── install
+│               │   │   ├── req
+│               │   │   ├── resolution
+│               │   │   │   ├── legacy
+│               │   │   │   └── resolvelib
+│               │   │   ├── utils
+│               │   │   └── vcs
+│               │   └── _vendor
+│               │       ├── cachecontrol
+│               │       │   └── caches
+│               │       ├── certifi
+│               │       ├── distlib
+│               │       ├── distro
+│               │       ├── idna
+│               │       ├── msgpack
+│               │       ├── packaging
+│               │       ├── pkg_resources
+│               │       ├── platformdirs
+│               │       ├── pygments
+│               │       │   ├── filters
+│               │       │   ├── formatters
+│               │       │   ├── lexers
+│               │       │   └── styles
+│               │       ├── pyproject_hooks
+│               │       │   └── _in_process
+│               │       ├── requests
+│               │       ├── resolvelib
+│               │       │   └── compat
+│               │       ├── rich
+│               │       ├── tomli
+│               │       ├── truststore
+│               │       └── urllib3
+│               │           ├── contrib
+│               │           │   └── _securetransport
+│               │           ├── packages
+│               │           │   └── backports
+│               │           └── util
+│               ├── pip-24.3.1.dist-info
+│               ├── pkg_resources
+│               │   └── tests
+│               │       └── data
+│               │           ├── my-test-package-source
+│               │           ├── my-test-package-zip
+│               │           ├── my-test-package_unpacked-egg
+│               │           │   └── my_test_package-1.0-py3.7.egg
+│               │           │       └── EGG-INFO
+│               │           └── my-test-package_zipped-egg
+│               ├── platformdirs
+│               ├── platformdirs-4.3.6.dist-info
+│               │   └── licenses
+│               ├── pluggy
+│               │   └── __pycache__
+│               ├── pluggy-1.5.0.dist-info
+│               ├── proto
+│               │   └── marshal
+│               │       ├── collections
+│               │       └── rules
+│               ├── proto_plus-1.25.0.dist-info
+│               ├── protobuf-3.20.3.dist-info
+│               ├── psutil
+│               │   ├── __pycache__
+│               │   └── tests
+│               ├── psutil-6.1.0.dist-info
+│               ├── public
+│               │   └── llmcloud
+│               │       ├── globalstatsmanager
+│               │       │   └── v1
+│               │       ├── modelmanager
+│               │       │   └── v1
+│               │       ├── queuestatemanager
+│               │       │   └── v1
+│               │       └── requestmanager
+│               │           └── v1
+│               ├── pyasn1
+│               │   ├── codec
+│               │   │   ├── ber
+│               │   │   ├── cer
+│               │   │   ├── der
+│               │   │   └── native
+│               │   ├── compat
+│               │   └── type
+│               ├── pyasn1-0.6.1.dist-info
+│               ├── pyasn1_modules
+│               ├── pyasn1_modules-0.4.1.dist-info
+│               ├── pycparser
+│               │   ├── __pycache__
+│               │   └── ply
+│               │       └── __pycache__
+│               ├── pycparser-2.22.dist-info
+│               ├── pycryptodome-3.21.0.dist-info
+│               ├── pydantic
+│               │   ├── __pycache__
+│               │   ├── _internal
+│               │   │   └── __pycache__
+│               │   ├── deprecated
+│               │   ├── experimental
+│               │   ├── plugin
+│               │   │   └── __pycache__
+│               │   └── v1
+│               ├── pydantic-2.10.2.dist-info
+│               │   └── licenses
+│               ├── pydantic_core
+│               │   └── __pycache__
+│               ├── pydantic_core-2.27.1.dist-info
+│               │   └── licenses
+│               ├── pydantic_settings
+│               │   └── __pycache__
+│               ├── pydantic_settings-2.6.1.dist-info
+│               │   └── licenses
+│               ├── pyparsing
+│               │   └── diagram
+│               ├── pyparsing-3.2.0.dist-info
+│               ├── pytest
+│               │   └── __pycache__
+│               ├── pytest-7.4.4.dist-info
+│               ├── pytest_asyncio
+│               │   └── __pycache__
+│               ├── pytest_asyncio-0.21.2.dist-info
+│               ├── pytest_cov
+│               │   └── __pycache__
+│               ├── pytest_cov-4.1.0.dist-info
+│               ├── pytest_xdist-3.6.1.dist-info
+│               ├── python_dotenv-1.0.1.dist-info
+│               ├── requests
+│               ├── requests-2.32.3.dist-info
+│               ├── requests-stubs
+│               ├── rsa
+│               ├── rsa-4.9.dist-info
+│               ├── rust
+│               │   ├── cryptography-cffi
+│               │   ├── cryptography-keepalive
+│               │   ├── cryptography-key-parsing
+│               │   ├── cryptography-openssl
+│               │   ├── cryptography-x509
+│               │   └── cryptography-x509-verification
+│               ├── setuptools
+│               │   ├── _distutils
+│               │   │   ├── command
+│               │   │   ├── compat
+│               │   │   └── tests
+│               │   │       └── compat
+│               │   ├── _vendor
+│               │   │   ├── autocommand
+│               │   │   ├── autocommand-2.2.2.dist-info
+│               │   │   ├── backports
+│               │   │   │   └── tarfile
+│               │   │   │       └── compat
+│               │   │   ├── backports.tarfile-1.2.0.dist-info
+│               │   │   ├── importlib_metadata
+│               │   │   │   └── compat
+│               │   │   ├── importlib_metadata-8.0.0.dist-info
+│               │   │   ├── inflect
+│               │   │   │   └── compat
+│               │   │   ├── inflect-7.3.1.dist-info
+│               │   │   ├── jaraco
+│               │   │   │   ├── collections
+│               │   │   │   ├── functools
+│               │   │   │   └── text
+│               │   │   ├── jaraco.collections-5.1.0.dist-info
+│               │   │   ├── jaraco.context-5.3.0.dist-info
+│               │   │   ├── jaraco.functools-4.0.1.dist-info
+│               │   │   ├── jaraco.text-3.12.1.dist-info
+│               │   │   ├── more_itertools
+│               │   │   ├── more_itertools-10.3.0.dist-info
+│               │   │   ├── packaging
+│               │   │   │   └── licenses
+│               │   │   ├── packaging-24.2.dist-info
+│               │   │   ├── platformdirs
+│               │   │   ├── platformdirs-4.2.2.dist-info
+│               │   │   │   └── licenses
+│               │   │   ├── tomli
+│               │   │   ├── tomli-2.0.1.dist-info
+│               │   │   ├── typeguard
+│               │   │   ├── typeguard-4.3.0.dist-info
+│               │   │   ├── typing_extensions-4.12.2.dist-info
+│               │   │   ├── wheel
+│               │   │   │   ├── cli
+│               │   │   │   └── vendored
+│               │   │   │       └── packaging
+│               │   │   ├── wheel-0.43.0.dist-info
+│               │   │   ├── zipp
+│               │   │   │   └── compat
+│               │   │   └── zipp-3.19.2.dist-info
+│               │   ├── command
+│               │   ├── compat
+│               │   ├── config
+│               │   │   └── _validate_pyproject
+│               │   └── tests
+│               │       ├── compat
+│               │       ├── config
+│               │       │   └── downloads
+│               │       ├── indexes
+│               │       │   └── test_links_priority
+│               │       │       └── simple
+│               │       │           └── foobar
+│               │       └── integration
+│               ├── setuptools-75.6.0.dist-info
+│               ├── tomli
+│               │   └── __pycache__
+│               ├── tomli-2.2.1.dist-info
+│               ├── types_protobuf-4.25.0.20240417.dist-info
+│               ├── types_requests-2.32.0.20241016.dist-info
+│               ├── typing_extensions-4.12.2.dist-info
+│               ├── uritemplate
+│               ├── uritemplate-4.1.1.dist-info
+│               ├── urllib3
+│               │   ├── __pycache__
+│               │   ├── contrib
+│               │   │   └── emscripten
+│               │   ├── http2
+│               │   │   └── __pycache__
+│               │   └── util
+│               │       └── __pycache__
+│               ├── urllib3-2.2.3.dist-info
+│               │   └── licenses
+│               ├── validators
+│               │   ├── crypto_addresses
+│               │   └── i18n
+│               ├── validators-0.34.0.dist-info
+│               ├── weaviate
+│               │   ├── backup
+│               │   ├── batch
+│               │   ├── classification
+│               │   ├── cluster
+│               │   ├── connect
+│               │   ├── contextionary
+│               │   ├── data
+│               │   │   ├── references
+│               │   │   └── replication
+│               │   ├── gql
+│               │   ├── proto
+│               │   │   └── v1
+│               │   └── schema
+│               │       └── properties
+│               ├── weaviate_client-3.26.7.dist-info
+│               └── xdist
+│                   ├── __pycache__
+│                   └── scheduler
+├── coverage_html
+├── deployment
+│   ├── env
+│   └── images
+│       ├── extractor
+│       ├── grafana
+│       │   └── config
+│       │       ├── dashboards
+│       │       └── provisioning
+│       │           ├── dashboards
+│       │           └── datasources
+│       ├── kafka
+│       │   └── config
+│       ├── minio
+│       │   └── config
+│       └── prometheus
+│           └── config
+├── src
+│   ├── __pycache__
+│   └── ai_etl_framework
+│       ├── __pycache__
+│       ├── cli
+│       │   ├── __pycache__
+│       │   └── commands
+│       │       └── __pycache__
+│       ├── common
+│       ├── config
+│       │   └── __pycache__
+│       └── load_testing
+│           └── __pycache__
+└── tests
+    ├── __pycache__
+    ├── test_config
+    │   └── __pycache__
+    ├── test_pipeline
+    └── test_services
+
+856 directories

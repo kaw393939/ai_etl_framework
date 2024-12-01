@@ -1,25 +1,52 @@
+---
 global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
+  scrape_interval: 15s       # By default, scrape targets every 15 seconds.
+  evaluation_interval: 15s  # Evaluate rules every 15 seconds.
 
 scrape_configs:
-  - job_name: 'prometheus'
+  - job_name: 'prometheus'   # The job name for Prometheus's own metrics.
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ['localhost:9090']  # Prometheus server itself.
+        labels:
+          environment: 'production'   # Custom label for this job.
 
-  - job_name: 'minio'
+  - job_name: 'minio'        # Job name for MinIO metrics.
     metrics_path: /minio/v2/metrics/cluster
-    bearer_token: minioadmin
     scheme: http
-    static_configs:
-      - targets: ['minio:9000']
+    bearer_token: minioadmin   # Authentication token for MinIO.
     tls_config:
-      insecure_skip_verify: true
-
-  - job_name: 'node'
+      insecure_skip_verify: true  
     static_configs:
-      - targets: ['node-exporter:9100']
+      - targets: ['minio:9000']   # MinIO service address.
+        labels:
+          service: 'minio'         # Custom label for MinIO.
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'minio-cluster'  # Rename the instance label.
 
-  - job_name: 'grafana'
+  - job_name: 'node_exporter'  # Job name for Node Exporter.
     static_configs:
-      - targets: ['grafana:3000']
+      - targets: ['node-exporter:9100']  # Node Exporter service address.
+        labels:
+          role: 'node_exporter'           # Custom label for Node Exporter.
+  - job_name: 'grafana'         # Job name for Grafana metrics.
+    static_configs:
+      - targets: ['grafana:3000']  # Grafana service address.
+        labels:
+          service: 'grafana'         # Custom label for Grafana.
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'grafana_dashboard'  # Rename the instance label.
+
+  - job_name: 'extractor'       # Job name for Extractor service metrics.
+    metrics_path: /metrics       # Metrics endpoint for Extractor.
+    static_configs:
+      - targets: ['extractor:8000']  # Extractor service address.
+        labels:
+          service: 'extractor_service'  # Custom label for Extractor.
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'extractor_service'  # Rename the instance label.
