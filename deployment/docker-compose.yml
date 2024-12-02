@@ -14,6 +14,9 @@ services:
       APP_VERSION: "1.0.0"
       APP_HOST: "0.0.0.0"
       APP_PORT: 8000
+    labels:  # Add some labels for better identification
+      com.etl.service: "extractor"
+      com.etl.component: "processing"
     depends_on:
       - prometheus
       - cadvisor          # Ensure Extractor starts after Prometheus and cAdvisor
@@ -119,18 +122,26 @@ services:
     restart: unless-stopped
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
-    container_name: cadvisor
-    ports:
-      - "8080:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    networks:
-      - etl_network
-    restart: unless-stopped
+      image: gcr.io/cadvisor/cadvisor:latest
+      container_name: cadvisor
+      ports:
+        - "8080:8080"
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+      environment:
+        - CADVISOR_CONTAINER_LABELS=com.etl.service
+      command:
+        - "--docker_only=true"
+        - "--enable_metrics=cpu,memory"
+        - "--store_container_labels=false"
+        - "--whitelisted_container_labels=com.etl.service"
+        - "--housekeeping_interval=30s"
+        - "--global_housekeeping_interval=30s"
+        - "--env_metadata_whitelist=.*"
+        - "--docker=unix:///var/run/docker.sock"
+      networks:
+        - etl_network
+      restart: unless-stopped
 
 volumes:
   minio_data:

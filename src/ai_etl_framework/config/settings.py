@@ -19,7 +19,7 @@ class ServiceConfig(BaseSettings):
     # MinIO settings
     minio_root_user: str = Field(default="minioadmin")
     minio_root_password: str = Field(default="minioadmin")
-    minio_endpoint: str = Field(default="localhost:9000")
+    minio_endpoint: str = Field(default="minio:9000")
     
     # Grafana settings with constrained port
     grafana_admin_user: str = Field(default="admin")

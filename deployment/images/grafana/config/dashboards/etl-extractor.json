@@ -3,12 +3,12 @@
     "list": []
   },
   "editable": true,
-  "fiscalYearStartMonth": 0,
+  "gnetId": null,
   "graphTooltip": 0,
   "links": [],
   "panels": [
     {
-      "title": "Extractor Health",
+      "title": "Extractor Service Health",
       "type": "stat",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "id": 1,
@@ -16,9 +16,14 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "targets": [
+        {
+          "expr": "up{job=\"extractor\"}",
+          "refId": "A"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
           "color": {
             "mode": "thresholds"
           },
@@ -43,26 +48,26 @@
           "values": false
         },
         "textMode": "auto"
-      },
-      "targets": [
-        {
-          "expr": "up{job=\"extractor\"}",
-          "refId": "A"
-        }
-      ]
+      }
     },
     {
-      "title": "Total Documents Processed",
-      "type": "timeseries",
+      "title": "Total URLs Processed",
+      "type": "stat",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "id": 2,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "targets": [
+        {
+          "expr": "extractor_processed_urls_total",
+          "refId": "A"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ops",
+          "unit": "none",
           "color": {
             "mode": "palette-classic"
           }
@@ -70,24 +75,17 @@
         "overrides": []
       },
       "options": {
-        "legend": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
           "calcs": ["sum"],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "etl_processed_documents_total{job=\"extractor\"}",
-          "legendFormat": "Total Documents Processed",
-          "refId": "A"
-        }
-      ]
+        "textMode": "auto"
+      }
     },
     {
       "title": "Processing Errors",
@@ -98,17 +96,22 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "targets": [
+        {
+          "expr": "extractor_processing_errors_total",
+          "refId": "A"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
           "color": {
             "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": 1 },
-              { "color": "green", "value": 0 }
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 1 }
             ]
           }
         },
@@ -125,13 +128,7 @@
           "values": false
         },
         "textMode": "auto"
-      },
-      "targets": [
-        {
-          "expr": "etl_processing_errors_total{job=\"extractor\"}",
-          "refId": "A"
-        }
-      ]
+      }
     },
     {
       "title": "Average Processing Duration",
@@ -142,25 +139,24 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "targets": [
+        {
+          "expr": "rate(extractor_processing_duration_seconds_sum[5m]) / rate(extractor_processing_duration_seconds_count[5m])",
+          "legendFormat": "Avg Processing Duration (s)",
+          "refId": "A"
+        }
+      ],
       "fieldConfig": {
         "defaults": {
           "unit": "s",
           "color": {
             "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "fillOpacity": 20,
-            "spanNulls": true
           }
         },
         "overrides": []
       },
       "options": {
         "legend": {
-          "calcs": ["avg"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -169,190 +165,13 @@
           "mode": "single",
           "sort": "none"
         }
-      },
-      "targets": [
-        {
-          "expr": "etl_processing_duration_seconds_sum{job=\"extractor\"} / etl_processing_duration_seconds_count{job=\"extractor\"}",
-          "legendFormat": "Average Processing Duration",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "title": "Pipeline Success Rate",
-      "type": "gauge",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
-      "id": 5,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": 0 },
-              { "color": "orange", "value": 80 },
-              { "color": "green", "value": 90 }
-            ]
-          },
-          "custom": {
-            "drawStyle": "gauge",
-            "fillOpacity": 50
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "auto",
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "targets": [
-        {
-          "expr": "100 * (1 - (rate(etl_processing_errors_total{job=\"extractor\"}[5m]) / rate(etl_processed_documents_total{job=\"extractor\"}[5m])))",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "title": "Stage Processing Times",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
-      "id": 6,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "fillOpacity": 20,
-            "spanNulls": true
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "calcs": ["mean", "max"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "rate(etl_stage_processing_duration_seconds_sum{job=\"extractor\"}[5m]) / rate(etl_stage_processing_duration_seconds_count{job=\"extractor\"}[5m])",
-          "legendFormat": "{{stage}}",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "title": "Extractor Request Count",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
-      "id": 7,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "calcs": ["mean", "max"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "http_server_requests_total{job=\"extractor\"}",
-          "legendFormat": "Requests",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "title": "Extractor Response Time",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
-      "id": 8,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "fillOpacity": 20,
-            "spanNulls": true
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "calcs": ["mean", "max"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "targets": [
-        {
-          "expr": "rate(http_request_duration_seconds_sum{job=\"extractor\"}[5m]) / rate(http_request_duration_seconds_count{job=\"extractor\"}[5m])",
-          "legendFormat": "Response Time",
-          "refId": "A"
-        }
-      ]
+      }
     }
   ],
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["etl", "extractor"],
+  "tags": ["extractor", "etl"],
   "templating": {
     "list": []
   },
@@ -361,9 +180,8 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "",
-  "title": "ETL Extractor Dashboard",
-  "uid": "etl-extractor",
-  "version": 2,
-  "weekStart": ""
+  "timezone": "browser",
+  "title": "Enhanced Extractor Dashboard",
+  "uid": "enhanced-extractor",
+  "version": 1
 }

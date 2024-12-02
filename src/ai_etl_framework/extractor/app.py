@@ -3,12 +3,15 @@ from pydantic import BaseModel
 from ai_etl_framework.config.settings import ServiceConfig
 from prometheus_fastapi_instrumentator import Instrumentator
 from prometheus_client import Counter, Histogram, Gauge
+import requests
 import time
 import os
 import tempfile
 import string
 import random
 import multiprocessing
+from minio import Minio
+from minio.error import S3Error
 
 # Load configuration
 config = ServiceConfig()
@@ -54,6 +57,20 @@ CPU_USAGE = Gauge(
 
 # Instrument FastAPI for Prometheus metrics
 Instrumentator().instrument(app).expose(app)
+
+# MinIO client initialization
+minio_client = Minio(
+    config.minio_endpoint,
+    access_key=config.minio_root_user,
+    secret_key=config.minio_root_password,
+    secure=False
+)
+
+BUCKET_NAME = "etl-extractor"
+
+# Ensure MinIO bucket exists
+if not minio_client.bucket_exists(BUCKET_NAME):
+    minio_client.make_bucket(BUCKET_NAME)
 
 # Define a request model for the URL input
 class URLRequest(BaseModel):
@@ -110,6 +127,26 @@ def process_url(
     
     start_time = time.time()
     try:
+        # Download URL content
+        response = requests.get(url)
+        response.raise_for_status()  # Raise exception for non-2xx responses
+        
+        # Save content to MinIO
+        file_name = f"{os.path.basename(url)}.txt"
+        file_path = os.path.join(tempfile.gettempdir(), file_name)
+        with open(file_path, 'w') as file:
+            file.write(response.text)
+        
+        try:
+            minio_client.fput_object(BUCKET_NAME, file_name, file_path)
+        finally:
+            os.remove(file_path)  # Ensure local cleanup
+        
+        # Update Prometheus metrics
+        REQUEST_COUNT.inc()
+        processing_duration = time.time() - start_time
+        PROCESSING_TIME.observe(processing_duration)
+        
         # Optional: Stress Memory
         allocated_memory = None
         if stress_memory:
@@ -117,65 +154,31 @@ def process_url(
             MEMORY_USAGE.set(len(allocated_memory.encode('utf-8')))
         
         # Optional: Stress Disk
-        temp_file_path = None
         if stress_disk:
-            temp_dir = tempfile.gettempdir()
-            temp_file = tempfile.NamedTemporaryFile(delete=False, dir=temp_dir, suffix='.tmp')
-            temp_file_path = temp_file.name
-            # Write random data to the file
-            data = generate_large_string(disk_size_mb)
-            temp_file.write(data.encode('utf-8'))
-            temp_file.close()
-            # Update disk usage metric
-            disk_usage_bytes = os.path.getsize(temp_file_path)
-            DISK_USAGE.set(disk_usage_bytes)
+            temp_file = tempfile.NamedTemporaryFile(delete=False)
+            try:
+                temp_file.write(generate_large_string(disk_size_mb).encode('utf-8'))
+                DISK_USAGE.set(os.path.getsize(temp_file.name))
+            finally:
+                os.remove(temp_file.name)
         
         # Optional: Stress CPU
-        cpu_process = None
         if stress_cpu:
             CPU_USAGE.set(cpu_load_percent)
-            cpu_process = multiprocessing.Process(target=cpu_stress, args=(cpu_load_percent, cpu_duration_sec))
-            cpu_process.start()
-        
-        # Placeholder for actual processing logic
-        # Simulate processing with a sleep
-        time.sleep(0.5)  # Simulate processing time
-        
-        REQUEST_COUNT.inc()
-        processing_duration = time.time() - start_time
-        PROCESSING_TIME.observe(processing_duration)
-        
-        # Wait for CPU stress to complete
-        if cpu_process:
-            cpu_process.join()
+            cpu_stress(cpu_load_percent, cpu_duration_sec)
             CPU_USAGE.set(0)
         
-        # Cleanup allocated resources to prevent memory leaks
+        # Cleanup
         if stress_memory:
             del allocated_memory
             MEMORY_USAGE.set(0)
         
-        if stress_disk:
-            os.remove(temp_file_path)
-            DISK_USAGE.set(0)
-        
         return {
-            "message": f"Processing URL: {url}",
-            "minio_endpoint": config.minio_endpoint,
-            "stress_memory": stress_memory,
-            "stress_disk": stress_disk,
-            "stress_cpu": stress_cpu
+            "message": f"Successfully processed URL: {url}",
+            "bucket": BUCKET_NAME,
+            "file": file_name,
+            "minio_endpoint": config.minio_endpoint
         }
     except Exception as e:
         PROCESSING_ERRORS.inc()
-        # Ensure cleanup in case of exception
-        if cpu_process and cpu_process.is_alive():
-            cpu_process.terminate()
-            CPU_USAGE.set(0)
-        if stress_memory:
-            del allocated_memory
-            MEMORY_USAGE.set(0)
-        if stress_disk and temp_file_path and os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-            DISK_USAGE.set(0)
         raise HTTPException(status_code=500, detail=str(e))

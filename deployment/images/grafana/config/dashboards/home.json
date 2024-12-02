@@ -413,47 +413,6 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "title": "Pipeline Success Rate",
-      "type": "gauge",
-      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 20 },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "red", "value": null },
-              { "color": "orange", "value": 80 },
-              { "color": "green", "value": 95 }
-            ]
-          },
-          "custom": {
-            "drawStyle": "gauge",
-            "fillOpacity": 50
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "orientation": "auto",
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true
-      },
-      "targets": [
-        {
-          "expr": "100 * (1 - (rate(etl_processing_errors_total[5m]) / rate(etl_processed_documents_total[5m])))",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
       "title": "Total URLs Processed",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 6, "x": 18, "y": 20 },
