@@ -1,10 +1,10 @@
-Sure! Below is the enhanced and carefully rewritten version of your `README.md` file. This version removes references to Kubernetes, ensures Docker commands are clear and well-formatted, clarifies headings, and adds additional information to provide a comprehensive overview of the project.
-
----
-
 # **AI ETL Framework**
 
 A high-performance, real-time AI ETL pipeline framework designed for scalable data processing with integrated monitoring, testing, and observability capabilities.
+
+Use this command to generate the directory tree to give to the LLM to make sure you get the right imports and structure.
+
+tree -L 3 -I '.git|.venv|__pycache__|*.pyc|.pytest_cache|.coverage|htmlcov' src tests poetry.lock pyproject.toml > directory_tree.txt 
 
 ---
 

@@ -12,7 +12,7 @@ scrape_configs:
 
   # -------- MinIO Metrics --------
   - job_name: 'minio'
-    metrics_path: /minio/prometheus/metrics
+    metrics_path: /minio/v2/metrics/cluster
     scheme: http
     static_configs:
       - targets: ['minio:9000']

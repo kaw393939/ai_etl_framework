@@ -11,24 +11,18 @@ src
     ├── config
     │   ├── __init__.py
     │   └── settings.py
-    ├── downloaded_videos
     ├── extractor
     │   ├── __init__.py
-    │   ├── app.py
-    │   └── models
-    ├── load_testing
-    │   ├── __init__.py
-    │   └── system_tester.py
-    ├── logs
-    │   └── app.log
-    ├── temp
-    └── transcripts
+    │   └── app.py
+    └── load_testing
+        ├── __init__.py
+        └── system_tester.py
 tests
 ├── __init__.py
 ├── conftest.py
-├── locust
+├── test_extractor.py
 └── test_settings.py
 poetry.lock  [error opening dir]
 pyproject.toml  [error opening dir]
 
-1 directory, 3 files
+0 directories, 4 files
