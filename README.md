@@ -254,7 +254,9 @@ Pre-configured Grafana dashboards include:
 ## **Configuration**
 
 ### **Environment Variables**
-Create a `.env` file in the project root to configure environment variables:
+Create a `.env` file in the project root and the deployment directory to configure environment variables:
+
+**Root Directory `.env`**:
 ```env
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin
@@ -262,6 +264,15 @@ GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=admin
 ```
 
+**Deployment Directory `.env`**:
+```env
+MAX_CONCURRENT_TASKS=3
+GROQ_API_KEY=your_groq_api_key_here
+```
+
+The deployment environment file controls task concurrency and API access:
+- `MAX_CONCURRENT_TASKS`: Limits the number of simultaneous tasks (default: 3)
+- `GROQ_API_KEY`: Your Groq API authentication key for AI processing
 ### **Service Configurations**
 Service-specific configurations are located in:
 ```plaintext
