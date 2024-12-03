@@ -7,33 +7,21 @@ from json import JSONEncoder
 import psutil
 
 from ai_etl_framework.extractor.models.tasks import TranscriptionTask, TaskStatus
-from ai_etl_framework.extractor.models.api_models import TaskResponse, TaskStats, TranscriptionMetadataResponse
+from ai_etl_framework.extractor.models.api_models import TaskResponse, TaskStats, TranscriptionMetadataResponse, \
+    StreamingTaskResponse
 from ai_etl_framework.extractor.youtube_transcription.manager import TranscriptionManager
 from ai_etl_framework.common.metrics import (
-    TASK_COUNTER,
-    TASK_STATUS_COUNTER,
-    TASK_PROCESSING_TIME,
-    DOWNLOAD_SPEED_GAUGE,
-    DOWNLOAD_PROGRESS_GAUGE,
-    MEMORY_USAGE,
-    CPU_USAGE,
-    DISK_IO,
-    NETWORK_IO,
-    STAGE_COUNTER,
-    STAGE_PROCESSING_TIME,
-    STAGE_MEMORY_USAGE,
-    STAGE_CPU_USAGE,
-    QUEUE_SIZE,
-    QUEUE_LATENCY,
-    FILE_SIZE,
-    CHUNK_COUNT,
-    API_REQUESTS,
-    API_LATENCY,
+    DOCUMENTS_PROCESSED,
+    DOCUMENT_PROCESSING_TIME,
+    DOCUMENT_SIZE,
+    TOKENS_PROCESSED,
+    TOKENS_PER_DOCUMENT,
+    TASK_STATUS,
+    QUEUE_DEPTH,
+    WORKER_STATUS,
     ERROR_COUNTER,
-    TRANSCRIPTION_QUALITY,
-    WORKER_POOL,
-    BATCH_PROCESSING
 )
+
 
 class DateTimeEncoder(JSONEncoder):
     def default(self, obj):
@@ -41,155 +29,170 @@ class DateTimeEncoder(JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
+
 class TranscriptionService:
     def __init__(self):
         self._manager = TranscriptionManager()
-        self._update_system_metrics()
+        self._update_worker_metrics()
 
-    def _update_system_metrics(self):
-        # Update system metrics
-        process = psutil.Process()
+        # Define stage weights for overall progress calculation
+        self.stage_weights = {
+            TaskStatus.DOWNLOADING: 0.2,
+            TaskStatus.SPLITTING: 0.1,
+            TaskStatus.TRANSCRIBING: 0.6,
+            TaskStatus.MERGING: 0.1
+        }
 
-        # Memory metrics
-        mem_info = process.memory_info()
-        MEMORY_USAGE.labels(type="rss").set(mem_info.rss)
-        MEMORY_USAGE.labels(type="vms").set(mem_info.vms)
+        # Track progress for each stage
+        self.stage_progress = {
+            TaskStatus.DOWNLOADING: 0.0,
+            TaskStatus.SPLITTING: 0.0,
+            TaskStatus.TRANSCRIBING: 0.0,
+            TaskStatus.MERGING: 0.0
+        }
 
-        # CPU metrics
-        CPU_USAGE.set(process.cpu_percent())
+    def calculate_overall_progress(self, task: TranscriptionTask) -> float:
+        """Calculate weighted overall progress across all stages."""
+        if task.status == TaskStatus.COMPLETED:
+            return 100.0
+        elif task.status == TaskStatus.FAILED:
+            return self.stage_progress[task.status] if task.status in self.stage_progress else 0.0
 
-        # Disk I/O metrics
-        io_counters = process.io_counters()
-        DISK_IO.labels(operation="read").inc(io_counters.read_bytes)
-        DISK_IO.labels(operation="write").inc(io_counters.write_bytes)
+        current_stage_weight = self.stage_weights.get(task.status, 0.0)
+        if current_stage_weight == 0.0:
+            return 0.0
 
-        # Network I/O metrics
-        net_io = psutil.net_io_counters()
-        NETWORK_IO.labels(direction="in").inc(net_io.bytes_recv)
-        NETWORK_IO.labels(direction="out").inc(net_io.bytes_sent)
+        # Calculate completed stages progress
+        completed_progress = 0.0
+        for stage, weight in self.stage_weights.items():
+            if self.stage_progress[stage] >= 100.0:
+                completed_progress += weight
 
-        # Update worker pool metrics (only total workers available)
-        WORKER_POOL.labels(state="total").set(len(self._manager.workers))
+        # Add current stage progress
+        current_progress = (self.stage_progress[task.status] / 100.0) * current_stage_weight
 
-    def add_task(self, url: str) -> TranscriptionTask:
-        success = self._manager.add_task(url)
-        if not success:
-            raise HTTPException(
-                status_code=400,
-                detail="Failed to add task. Queue might be full or URL already exists."
-            )
-        TASK_COUNTER.inc()
+        # Convert to percentage
+        total_progress = (completed_progress + current_progress) * 100.0
+        return min(99.9, total_progress)  # Cap at 99.9% until fully complete
 
-        # Get the recently added task
-        task = self._manager.get_tasks()[-1]
-        # Record queue latency start time
-        task.queue_start_time = time.time()
-        return task
+    def update_stage_progress(self, task: TranscriptionTask, progress: float):
+        """Update progress for the current stage."""
+        if task.status in self.stage_progress:
+            self.stage_progress[task.status] = progress
 
     async def stream_status(self, task: TranscriptionTask):
-        """Stream task status updates with enhanced metrics tracking"""
-        start_time = datetime.now()
-        stage_start_time = time.time()
-        current_stage = None
-        last_status = None
-        last_progress = None
+        """Stream task status with continuous progress tracking."""
+        start_time = time.time()
+        previous_status = None
+        previous_progress = 0.0
 
         while True:
             try:
                 current_status = task.status
 
-                # Track stage transitions
-                if current_status != current_stage:
-                    if current_stage:
-                        # Record previous stage duration
-                        duration = time.time() - stage_start_time
-                        STAGE_PROCESSING_TIME.labels(stage=current_stage.value).observe(duration)
+                # Track status transitions
+                if current_status != previous_status:
+                    if previous_status:
+                        # Mark previous stage as complete
+                        self.stage_progress[previous_status] = 100.0
+                        TASK_STATUS.labels(status=previous_status.value).inc()
+                    previous_status = current_status
+                    previous_progress = 0.0
 
-                    # Start timing new stage
-                    current_stage = current_status
-                    stage_start_time = time.time()
-                    STAGE_COUNTER.labels(
-                        stage=current_stage.value,
-                        status="start"
-                    ).inc()
+                # Update current stage progress based on task stats
+                if task.stats and current_status in self.stage_progress:
+                    self.stage_progress[current_status] = task.stats.progress
 
-                # Update system metrics
-                self._update_system_metrics()
+                # Calculate overall progress
+                overall_progress = self.calculate_overall_progress(task)
 
-                # Resource usage per stage
-                process = psutil.Process()
-                STAGE_MEMORY_USAGE.labels(stage=current_stage.value).set(
-                    process.memory_info().rss
-                )
-                STAGE_CPU_USAGE.labels(stage=current_stage.value).set(
-                    process.cpu_percent()
-                )
+                # Only yield if there's a meaningful change in progress or status
+                if (overall_progress - previous_progress >= 0.1 or
+                        current_status != previous_status):
 
-                # Queue metrics
-                QUEUE_SIZE.set(self._manager.task_queue.qsize())
+                    # Update task stats with overall progress
+                    if task.stats:
+                        task.stats.progress = overall_progress
+                        if task.stats.total_bytes > 0:
+                            elapsed_time = time.time() - start_time
+                            remaining_progress = 100.0 - overall_progress
+                            if remaining_progress > 0:
+                                task.stats.eta = (elapsed_time / overall_progress) * remaining_progress
 
-                # Calculate queue latency
-                if current_status != TaskStatus.PENDING and hasattr(task, 'queue_start_time'):
-                    queue_latency = time.time() - task.queue_start_time
-                    QUEUE_LATENCY.observe(queue_latency)
-                    del task.queue_start_time  # Remove attribute after recording latency
-
-                # Update task status counter
-                if current_status != last_status:
-                    TASK_STATUS_COUNTER.labels(status=current_status.value).inc()
-
-                # Existing metrics...
-                if task.stats:
-                    DOWNLOAD_SPEED_GAUGE.set(task.stats.speed)
-                    DOWNLOAD_PROGRESS_GAUGE.set(task.stats.progress)
-
-                    # File size metrics
-                    if task.stats.total_bytes > 0:
-                        FILE_SIZE.observe(task.stats.total_bytes)
-
-                # Update chunk count if available
-                if hasattr(task, 'chunk_count'):
-                    CHUNK_COUNT.observe(task.chunk_count)
-
-                # Update youtube_transcription quality metrics if available
-                if hasattr(task, 'transcription_quality'):
-                    TRANSCRIPTION_QUALITY.labels(metric_type="confidence").observe(
-                        task.transcription_quality.confidence
-                    )
-                    TRANSCRIPTION_QUALITY.labels(metric_type="word_error_rate").observe(
-                        task.transcription_quality.word_error_rate
-                    )
-
-                # Check if status or progress has changed
-                current_progress = task.stats.progress if task.stats else 0
-                if (current_status != last_status or
-                    abs(current_progress - (last_progress or 0)) >= 1.0):
+                    # Generate response
                     response = self._task_to_response(task)
-                    yield f"data: {json.dumps(response.model_dump(), cls=DateTimeEncoder)}\n\n"
+                    streaming_response = StreamingTaskResponse.from_task(response)
+                    yield f"data: {streaming_response.model_dump_json()}\n\n"
 
-                    last_status = current_status
-                    last_progress = current_progress
+                    previous_progress = overall_progress
 
-                # Exit conditions with final metrics
+                # Handle completion states
                 if current_status in [TaskStatus.COMPLETED, TaskStatus.FAILED]:
-                    processing_time = (datetime.now() - start_time).total_seconds()
-                    TASK_PROCESSING_TIME.observe(processing_time)
+                    processing_time = time.time() - start_time
+                    DOCUMENT_PROCESSING_TIME.observe(processing_time)
 
-                    STAGE_COUNTER.labels(
-                        stage=current_stage.value,
-                        status="success" if current_status == TaskStatus.COMPLETED else "failure"
-                    ).inc()
+                    if current_status == TaskStatus.COMPLETED:
+                        DOCUMENTS_PROCESSED.labels(status="success").inc()
+                        if hasattr(task, 'transcription_metadata'):
+                            input_tokens = task.transcription_metadata.word_count
+                            TOKENS_PROCESSED.labels(type="input").inc(input_tokens)
+                            TOKENS_PER_DOCUMENT.labels(type="input").observe(input_tokens)
+                    else:
+                        DOCUMENTS_PROCESSED.labels(status="failure").inc()
+                        ERROR_COUNTER.labels(
+                            error_type="processing_failed",
+                            stage="document_processing"
+                        ).inc()
                     break
+
+                # Update metrics
+                QUEUE_DEPTH.set(self._manager.task_queue.qsize())
+                if hasattr(task, 'file_size'):
+                    DOCUMENT_SIZE.observe(task.file_size)
 
                 await asyncio.sleep(0.5)
 
             except Exception as e:
                 ERROR_COUNTER.labels(
-                    type="processing",
-                    stage=current_stage.value if current_stage else "unknown"
+                    error_type="stream_status_error",
+                    stage="status_streaming"
                 ).inc()
                 print(f"Error in stream_status: {e}")
                 break
+
+
+    def _update_worker_metrics(self):
+        """Update worker pool metrics."""
+        active_workers = len([w for w in self._manager.workers if w.is_alive()])
+        total_workers = len(self._manager.workers)
+
+        WORKER_STATUS.labels(state="active").set(active_workers)
+        WORKER_STATUS.labels(state="idle").set(total_workers - active_workers)
+        WORKER_STATUS.labels(state="total").set(total_workers)
+
+
+    def add_task(self, url: str) -> TranscriptionTask:
+        """Add a new task with metrics tracking."""
+        success = self._manager.add_task(url)
+        if not success:
+            ERROR_COUNTER.labels(
+                error_type="queue_full",
+                stage="task_creation"
+            ).inc()
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to add task. Queue might be full or URL already exists."
+            )
+
+        # Update queue metrics
+        QUEUE_DEPTH.set(self._manager.task_queue.qsize())
+        TASK_STATUS.labels(status="pending").inc()
+
+        task = self._manager.get_tasks()[-1]
+        task.metrics_start_time = time.time()
+        return task
+
+
 
     def _task_to_response(self, task: TranscriptionTask) -> TaskResponse:
         try:
@@ -230,4 +233,14 @@ class TranscriptionService:
             raise
 
     def shutdown(self):
-        self._manager.shutdown()
+        """Shutdown service with final metric updates."""
+        try:
+            self._manager.shutdown()
+            # Final worker metrics update
+            self._update_worker_metrics()
+        except Exception as e:
+            ERROR_COUNTER.labels(
+                error_type="shutdown_error",
+                stage="service_shutdown"
+            ).inc()
+            print(f"Error during shutdown: {e}")
