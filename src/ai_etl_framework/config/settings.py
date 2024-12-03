@@ -51,7 +51,7 @@ class TranscriptionConfig(BaseSettings):
     chunk_max_size_bytes: int = Field(default=25 * 1024 * 1024)  # 25 MB
     chunk_duration_sec: int = Field(default=300)
     api_timeout: int = Field(default=300)
-    api_key: str = Field(...)  # Required field
+    api_key: str = Field(default="not_set")  # Required field
 
 
 class WorkerConfig(BaseSettings):
@@ -60,18 +60,23 @@ class WorkerConfig(BaseSettings):
 
 
 class DirectoryConfig(BaseSettings):
-    base_dir: Path = Field(default=Path(__file__).resolve().parent.parent)
-    temp_dir: Path = Field(default=f"{base_dir}/temp")
-    downloaded_videos_dir: Path = Field(default=f"{base_dir}/downloaded_videos")
-    output_dir: Path = Field(default=f"{base_dir}/transcripts")
-    logs_dir: Path = Field(default=f"{base_dir}/logs")
+    base_dir: Path = Field(default_factory=lambda: Path(__file__).resolve().parent.parent)
+    temp_dir: Optional[Path] = None
+    downloaded_videos_dir: Optional[Path] = None
+    output_dir: Optional[Path] = None
+    logs_dir: Optional[Path] = None
 
     def model_post_init(self, *args, **kwargs):
+        """Initialize directory paths after base_dir is set."""
         # Set default paths relative to base_dir if not specified
-        self.temp_dir = self.temp_dir or self.base_dir / 'temp'
-        self.downloaded_videos_dir = self.downloaded_videos_dir or self.base_dir / 'downloaded_videos'
-        self.output_dir = self.output_dir or self.base_dir / 'transcripts'
-        self.logs_dir = self.logs_dir or self.base_dir / 'logs'
+        if not self.temp_dir:
+            self.temp_dir = self.base_dir / 'temp'
+        if not self.downloaded_videos_dir:
+            self.downloaded_videos_dir = self.base_dir / 'downloaded_videos'
+        if not self.output_dir:
+            self.output_dir = self.base_dir / 'transcripts'
+        if not self.logs_dir:
+            self.logs_dir = self.base_dir / 'logs'
 
 
 class ServiceConfig(BaseSettings):
@@ -146,7 +151,7 @@ class MinIOConfig(BaseSettings):
         description="MinIO secret key"
     )
     bucket: str = Field(
-        default="youtube_transcription-service",
+        default="youtube-transcription-service",
         description="Default MinIO bucket name"
     )
 
