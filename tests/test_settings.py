@@ -1,70 +1,73 @@
 import pytest
+from pathlib import Path
+from ai_etl_framework.config.settings import (
+    Environment,
+    ServiceConfig,
+    DirectoryConfig,
+    AppConfig,
+    MinIOConfig
+)
 
-from src.ai_etl_framework.config.settings import Environment, ServiceConfig
 
-def test_service_config_default_values():
-    """
-    Test that the ServiceConfig class initializes with correct default values
-    """
-    config = ServiceConfig()
-    
-    # Test environment settings
-    assert config.environment == Environment.DEV
-    assert config.debug is False
-    
-    # Test MinIO settings
-    assert config.minio_root_user == "minioadmin"
-    assert config.minio_root_password == "minioadmin"
-    assert config.minio_endpoint == "localhost:9000"
-    
-    # Test Grafana settings
-    assert config.grafana_admin_user == "admin"
-    assert config.grafana_admin_password == "admin"
-    assert config.grafana_port == 3000
-    
-    # Test Prometheus settings
-    assert config.prometheus_port == 9090
-    
-    # Test FastAPI settings
-    assert config.app_title == "ETL Extractor Service"
-    assert config.app_description == "Service to process data for the ETL pipeline."
-    assert config.app_version == "1.0.0"
-    assert config.app_host == "0.0.0.0"
-    assert config.app_port == 8000
+def test_service_config_initialization(test_service_config: ServiceConfig):
+    """Test ServiceConfig initialization with test values"""
+    assert test_service_config.environment == Environment.TEST
+    assert test_service_config.debug is True
+    assert test_service_config.app_title == "Transcription Service API"
+    assert test_service_config.app_description == "Service to process and transcribe audio/video content."
+    assert test_service_config.app_version == "1.0.0"
+    assert test_service_config.app_host == "localhost"
+    assert test_service_config.app_port == 8000
 
-def test_service_config_environment_validation():
-    """
-    Test environment enum validation
-    """
-    # Test valid environment values
-    for env in Environment:
-        config = ServiceConfig(environment=env)
-        assert config.environment == env
 
-def test_service_config_port_constraints():
-    """
-    Test port number constraints
-    """
-    # Test valid port numbers
-    ServiceConfig(grafana_port=1)
-    ServiceConfig(grafana_port=65535)
-    ServiceConfig(prometheus_port=1)
-    ServiceConfig(prometheus_port=65535)
-    ServiceConfig(app_port=1)
-    ServiceConfig(app_port=65535)
-    
-    # Test invalid port numbers
+def test_directory_config_initialization(test_directory_config: DirectoryConfig, test_base_dir: Path):
+    """Test DirectoryConfig initialization and directory structure"""
+    assert test_directory_config.base_dir == test_base_dir
+    assert test_directory_config.temp_dir == test_base_dir / 'temp'
+    assert test_directory_config.downloaded_videos_dir == test_base_dir / 'downloaded_videos'
+    assert test_directory_config.output_dir == test_base_dir / 'transcripts'
+    assert test_directory_config.logs_dir == test_base_dir / 'logs'
+
+
+def test_minio_config_initialization(test_minio_config: MinIOConfig):
+    """Test MinIOConfig initialization with test values"""
+    assert test_minio_config.endpoint == "minio:9000"
+    assert test_minio_config.access_key == "minioadmin"
+    assert test_minio_config.secret_key == "minioadmin"
+    assert test_minio_config.bucket == "test-bucket"
+    assert test_minio_config.secure is False
+
+
+def test_app_config_initialization(test_app_config: AppConfig):
+    """Test complete AppConfig initialization"""
+    assert test_app_config.service.environment == Environment.TEST
+    assert test_app_config.service.debug is True
+    assert test_app_config.minio.endpoint == "minio:9000"
+    assert test_app_config.worker.max_workers == 2
+    assert test_app_config.worker.max_queue_size == 10
+
+
+def test_environment_validation():
+    """Test environment enum validation"""
     with pytest.raises(ValueError):
-        ServiceConfig(grafana_port=0)
-    with pytest.raises(ValueError):
-        ServiceConfig(grafana_port=65536)
-    
-    with pytest.raises(ValueError):
-        ServiceConfig(prometheus_port=0)
-    with pytest.raises(ValueError):
-        ServiceConfig(prometheus_port=65536)
-    
+        ServiceConfig(environment="invalid")
+
+
+def test_port_validation():
+    """Test port number validation"""
     with pytest.raises(ValueError):
         ServiceConfig(app_port=0)
+
     with pytest.raises(ValueError):
         ServiceConfig(app_port=65536)
+
+
+def test_directory_creation(test_app_config: AppConfig, test_base_dir: Path):
+    """Test directory creation functionality"""
+    test_app_config.setup_directories()
+
+    assert test_base_dir.exists()
+    assert (test_base_dir / 'temp').exists()
+    assert (test_base_dir / 'downloaded_videos').exists()
+    assert (test_base_dir / 'transcripts').exists()
+    assert (test_base_dir / 'logs').exists()

@@ -1,53 +1,56 @@
-from unittest.mock import patch
-import pytest
-from fastapi.testclient import TestClient
+from minio import Minio
 
-@pytest.fixture
-def mock_service_config():
-    """Fixture to mock the ServiceConfig."""
-    with patch("ai_etl_framework.config.settings.ServiceConfig") as mock_service_config:
-        mock_service_config.return_value.app_title = "ETL Extractor"
-        mock_service_config.return_value.app_description = "Mocked ETL Extractor"
-        mock_service_config.return_value.app_version = "0.1.0"
-        mock_service_config.return_value.debug = True
-        mock_service_config.return_value.environment = "test"
-        mock_service_config.return_value.minio_endpoint = "http://mock-minio"
-        yield mock_service_config
 
-def test_root_endpoint(mock_service_config):
-    """Test the root endpoint."""
-    from ai_etl_framework.extractor.app import app
-    client = TestClient(app)
-
-    # Test the endpoint
-    response = client.get("/")
+def test_root_endpoint(app_client, test_app_config):
+    """Test the root endpoint functionality."""
+    response = app_client.get("/")
     assert response.status_code == 200
+
+    data = response.json()
+    assert data["message"] == "Transcription Service is running"
+    assert data["environment"] == test_app_config.service.environment
+    assert data["debug"] == test_app_config.service.debug
+import pytest
+import minio
+from unittest.mock import Mock, patch, AsyncMock
+from datetime import datetime
+from fastapi import HTTPException
+
+from ai_etl_framework.extractor.models.tasks import TranscriptionTask, TaskStatus, TaskStats, TranscriptionMetadata
+from ai_etl_framework.extractor.youtube_transcription.transcription_service import TranscriptionService
+from ai_etl_framework.extractor.models.api_models import TaskResponse, StreamingTaskResponse
+
+def test_root_endpoint(app_client, test_app_config, minio_mock):
+    """Test the root endpoint functionality."""
+    # The minio_mock automatically patches minio.Minio
+    response = app_client.get("/")
+    assert response.status_code == 200
+
     data = response.json()
     assert data["message"] == "ETL Extractor Service is running."
-    assert data["environment"] == "test"
-    assert data["debug"] is True
+    assert data["environment"] == test_app_config.service.environment
+    assert data["debug"] == test_app_config.service.debug
 
-def test_process_url_success(mock_service_config):
-    """Test processing a URL successfully."""
-    from ai_etl_framework.extractor.app import app
-    client = TestClient(app)
 
-    url = "http://example.com"
+def test_process_url_success(app_client,minio_mock):
+    """Test successful URL processing."""
+    url = "http://example.com/video"
     payload = {"url": url}
-    response = client.post("/process-url/", json=payload)
+
+    response = app_client.post("/process-url/", json=payload)
     assert response.status_code == 200
+
     data = response.json()
     assert data["message"] == f"Processing URL: {url}"
+    assert "minio_endpoint" in data
     assert data["stress_memory"] is False
     assert data["stress_disk"] is False
     assert data["stress_cpu"] is False
 
-def test_process_url_with_stress_options(mock_service_config):
-    """Test processing a URL with stress options enabled."""
-    from ai_etl_framework.extractor.app import app
-    client = TestClient(app)
 
-    url = "http://example.com"
+def test_process_url_with_stress_options(app_client,minio_mock):
+    """Test URL processing with stress testing options."""
+    url = "http://example.com/video"
     payload = {"url": url}
     query_params = {
         "stress_memory": True,
@@ -58,43 +61,42 @@ def test_process_url_with_stress_options(mock_service_config):
         "cpu_load_percent": 50,
         "cpu_duration_sec": 5
     }
-    response = client.post("/process-url/", json=payload, params=query_params)
+
+    response = app_client.post("/process-url/", json=payload, params=query_params)
     assert response.status_code == 200
+
     data = response.json()
     assert data["message"] == f"Processing URL: {url}"
     assert data["stress_memory"] is True
     assert data["stress_disk"] is True
     assert data["stress_cpu"] is True
 
-def test_process_url_empty_url(mock_service_config):
-    """Test processing with an empty URL."""
-    from ai_etl_framework.extractor.app import app
-    client = TestClient(app)
 
+def test_process_url_empty_url(app_client,minio_mock):
+    """Test handling of empty URL submission."""
     payload = {"url": ""}
-    response = client.post("/process-url/", json=payload)
+
+    response = app_client.post("/process-url/", json=payload)
     assert response.status_code == 400
+
     data = response.json()
     assert data["detail"] == "URL must not be empty."
 
-def test_process_url_invalid_params(mock_service_config):
-    """Test processing with invalid query parameters."""
-    from ai_etl_framework.extractor.app import app
-    client = TestClient(app)
 
-    url = "http://example.com"
+def test_process_url_invalid_params(app_client,minio_mock):
+    """Test handling of invalid stress test parameters."""
+    url = "http://example.com/video"
     payload = {"url": url}
     query_params = {
-        "memory_size_mb": 2000  # Invalid: exceeds limit
+        "memory_size_mb": 2000  # Exceeds maximum limit
     }
-    response = client.post("/process-url/", json=payload, params=query_params)
+
+    response = app_client.post("/process-url/", json=payload, params=query_params)
     assert response.status_code == 422
 
-def test_prometheus_metrics_exposed(mock_service_config):
-    """Test Prometheus metrics endpoint exposure."""
-    from ai_etl_framework.extractor.app import app
-    client = TestClient(app)
 
-    response = client.get("/metrics")
+def test_prometheus_metrics_endpoint(app_client,minio_mock):
+    """Test the Prometheus metrics endpoint."""
+    response = app_client.get("/metrics")
     assert response.status_code == 200
-    assert "extractor_processed_urls_total" in response.text
+    assert "transcription_service_requests_total" in response.text
