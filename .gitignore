@@ -29,7 +29,7 @@ env.bak/
 venv.bak/
 
 # Environment Variables
-.env
+deployment/.env
 .env.*
 !.env.example
 
@@ -61,7 +61,7 @@ coverage/
 *.model
 *.joblib
 data/
-models/
+
 *.bin
 *.vec
 *.npy
