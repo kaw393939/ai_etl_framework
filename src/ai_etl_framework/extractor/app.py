@@ -15,6 +15,8 @@ from typing import Optional
 from pydantic import BaseModel, HttpUrl
 
 from ai_etl_framework.common.logger import setup_logger
+from ai_etl_framework.common.metrics import PROCESSING_ERRORS, PROCESSING_TIME, REQUEST_COUNT, DISK_USAGE, MEMORY_USAGE, \
+    CPU_USAGE
 from ai_etl_framework.config.settings import config
 from ai_etl_framework.extractor.youtube_transcription.transcription_service import TranscriptionService
 logger = setup_logger(__name__)
@@ -27,44 +29,11 @@ app = FastAPI(
 )
 
 # Initialize Prometheus metrics
-REQUEST_COUNT = Counter(
-    'transcription_service_requests_total',
-    'Total number of requests processed',
-    ['endpoint']
-)
-
-PROCESSING_ERRORS = Counter(
-    'transcription_service_errors_total',
-    'Total number of processing errors',
-    ['endpoint']
-)
-
-PROCESSING_TIME = Histogram(
-    'transcription_service_duration_seconds',
-    'Duration of request processing in seconds',
-    ['endpoint']
-)
-
-MEMORY_USAGE = Gauge(
-    'transcription_service_memory_usage_bytes',
-    'Current memory usage in bytes'
-)
-
-DISK_USAGE = Gauge(
-    'transcription_service_disk_usage_bytes',
-    'Current disk usage in bytes'
-)
-
-CPU_USAGE = Gauge(
-    'transcription_service_cpu_usage_percent',
-    'Current CPU usage in percent'
-)
 
 # Instrument FastAPI for Prometheus metrics
 Instrumentator().instrument(app).expose(app)
 
 # Create global service instance
-transcription_service = TranscriptionService()
 
 # Request Models
 class URLRequest(BaseModel):
@@ -96,7 +65,7 @@ def root():
     """Root endpoint for service health check."""
     REQUEST_COUNT.labels(endpoint="root").inc()
     return {
-        "message": "Transcription Service is running",
+        "message": "ETL Extractor Service is running.",
         "environment": config.service.environment,
         "debug": config.service.debug
     }
@@ -191,6 +160,8 @@ def process_url(
 async def create_task(task_request: TaskRequest):
     """Submit new youtube_transcription task and stream status updates using Server-Sent Events."""
     start_time = time.time()
+    transcription_service = TranscriptionService()
+
     try:
         task = transcription_service.add_task(str(task_request.url))
         REQUEST_COUNT.labels(endpoint="tasks").inc()
@@ -206,10 +177,6 @@ async def create_task(task_request: TaskRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.on_event("shutdown")
-def shutdown_service():
-    """Cleanup on service shutdown."""
-    transcription_service.shutdown()
 
 
 if __name__ == "__main__":
