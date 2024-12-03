@@ -1,5 +1,7 @@
 import subprocess
 import tempfile
+import time
+
 import httpx
 import json
 import io
@@ -11,6 +13,7 @@ import backoff
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
+from ai_etl_framework.common.metrics import CHUNKS_PER_DOCUMENT, BATCH_STATISTICS, ERROR_COUNTER
 from ai_etl_framework.config.settings import config
 from ai_etl_framework.extractor.models.tasks import TranscriptionTask
 from ai_etl_framework.common.logger import setup_logger
@@ -270,9 +273,34 @@ class AudioTranscriber:
             task.set_error(str(e))
             return False
 
-    async def transcribe_all_chunks(self, task: TranscriptionTask) -> bool:
-        """Asynchronous wrapper for batch processing."""
-        return await self.transcribe_chunks_async(task)
+    async def transcribe_all_chunks(self, task: TranscriptionTask)-> bool:
+        """Process all chunks with batch metrics tracking."""
+        try:
+            chunks_info = task.metadata.get("chunks_info", {}).get("chunks", [])
+
+            # Track chunks per document
+            CHUNKS_PER_DOCUMENT.observe(len(chunks_info))
+
+            batch_start_time = time.time()
+            results = await self.transcribe_chunks_async(task)
+
+            # Track batch processing statistics
+            BATCH_STATISTICS.labels(
+                metric_type="processing_time"
+            ).observe(time.time() - batch_start_time)
+
+            BATCH_STATISTICS.labels(
+                metric_type="batch_size"
+            ).observe(len(chunks_info))
+
+            return results
+
+        except Exception as e:
+            ERROR_COUNTER.labels(
+                error_type="batch_processing_error",
+                stage="transcription"
+            ).inc()
+            return False
 
     async def merge_transcripts(self, task: TranscriptionTask) -> bool:
         """Merge individual chunk transcriptions using MinIO storage."""
