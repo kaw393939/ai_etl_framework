@@ -56,6 +56,7 @@ isort = "^5.12.0"
 
 # Load testing
 locust = "^2.32.3"
+pytest-minio-mock = "^0.4.16"
 
 [tool.poetry.scripts]
 ai-etl = "ai_etl_framework.cli.main:cli"
