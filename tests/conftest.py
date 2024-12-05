@@ -1,5 +1,5 @@
-import pytest
 from pathlib import Path
+
 from ai_etl_framework.config.settings import (
     Environment,
     ServiceConfig,
@@ -7,28 +7,70 @@ from ai_etl_framework.config.settings import (
     AppConfig,
     MinIOConfig, TranscriptionConfig, DownloadConfig, LoggingConfig, WorkerConfig
 )
-import sys
-from pathlib import Path
 
-from unittest.mock import patch, MagicMock
-import pytest
+from unittest.mock import patch, MagicMock, AsyncMock
+
 from prometheus_client import CollectorRegistry, Counter, Histogram, Gauge
 from fastapi.testclient import TestClient
-@pytest.fixture
-def test_base_dir(tmp_path: Path) -> Path:
-    """Create a temporary base directory for testing"""
-    return tmp_path
 
-@pytest.fixture
-def test_directory_config(test_base_dir: Path) -> DirectoryConfig:
-    """Create test directory configuration"""
-    return DirectoryConfig(
-        base_dir=test_base_dir,
-        temp_dir=test_base_dir / 'temp',
-        downloaded_videos_dir=test_base_dir / 'downloaded_videos',
-        output_dir=test_base_dir / 'transcripts',
-        logs_dir=test_base_dir / 'logs'
-    )
+
+
+
+
+import pytest
+import asyncio
+from typing import Generator, Dict
+from ai_etl_framework.common.minio_service import MinioStorageService
+from ai_etl_framework.config.settings import config
+from minio import Minio
+import httpx
+
+
+@pytest.fixture(scope="function")
+def mock_groq_api(mocker):
+    """Mock only the Groq API calls."""
+    mock_response = {
+        "text": "This is a test transcription result that will be saved to MinIO.",
+        "language": "en",
+        "confidence": 0.95,
+        "segments": [
+            {
+                "start": 0,
+                "end": 3.2,
+                "text": "This is a test transcription result."
+            }
+        ]
+    }
+
+    # Create a synchronous mock response object
+    async def mock_post(*args, **kwargs):
+        class MockResponse:
+            status_code = 200
+
+            def raise_for_status(self):
+                pass
+
+            # Make this a regular method, not an async method
+            def json(self):
+                return mock_response
+
+        return MockResponse()
+
+    # Patch the httpx client post
+    mocker.patch('httpx.AsyncClient.post', side_effect=mock_post)
+@pytest.fixture(scope="session")
+def test_video_url():
+    """A real, short YouTube video URL for testing."""
+    # Choose a very short (5-10 second) Creative Commons video
+    return "https://www.youtube.com/watch?v=3RoDXg2rAkY"
+
+
+@pytest.fixture(scope="function")
+async def test_minio():
+    """Setup MinIO connection for testing."""
+    # Use the actual MinIO service - no mocking
+    minio_service = MinioStorageService()
+    return minio_service
 
 @pytest.fixture
 def test_service_config() -> ServiceConfig:
@@ -43,17 +85,61 @@ def test_service_config() -> ServiceConfig:
         app_port=8000
     )
 
+
+
+
 @pytest.fixture
-def test_minio_config() -> MinIOConfig:
-    """Create test MinIO configuration"""
-    return MinIOConfig(
-        endpoint="minio:9000",
-        access_key="minioadmin",
-        secret_key="minioadmin",
-        bucket="test-bucket",
-        secure=False
+def test_directory_config(tmp_path: Path) -> DirectoryConfig:
+    """Create test directory configuration using temporary path."""
+    return DirectoryConfig(
+        base_dir=tmp_path,
+        temp_dir=tmp_path / "temp",
+        downloaded_videos_dir=tmp_path / "downloaded_videos",
+        output_dir=tmp_path / "transcripts",
+        logs_dir=tmp_path / "logs"
     )
 
+
+@pytest.fixture
+def test_service_config() -> ServiceConfig:
+    """Create test service configuration."""
+    return ServiceConfig(
+        environment=Environment.TEST,
+        debug=True,
+        minio_root_user="test_user",
+        minio_root_password="test_password",
+        minio_endpoint="localhost:9001",
+        grafana_admin_user="test_admin",
+        grafana_admin_password="test_admin_pass",
+        grafana_port=3001,
+        prometheus_port=9091,
+        app_title="Test Transcription API",
+        app_description="Test Service",
+        app_version="0.0.1",
+        app_host="127.0.0.1",
+        app_port=8001
+    )
+
+
+@pytest.fixture
+def test_minio_config() -> MinIOConfig:
+    """Create test MinIO configuration."""
+    storage_paths: Dict[str, str] = {
+        "audio": "test_audio",
+        "chunks": "test_chunks",
+        "transcripts": "test_transcripts",
+        "metadata": "test_metadata",
+        "temp": "test_temp"
+    }
+
+    return MinIOConfig(
+        endpoint="minio:9000",
+        access_key="test_access_key",
+        secret_key="test_secret_key",
+        bucket="test-bucket",
+        secure=False,
+        storage_paths=storage_paths
+    )
 @pytest.fixture
 def test_app_config(
         test_directory_config: DirectoryConfig,

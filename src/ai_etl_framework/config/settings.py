@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import List, Optional, Dict, Annotated
 from pathlib import Path
-from pydantic import Field, HttpUrl, BaseModel
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +14,7 @@ class Environment(str, Enum):
     PROD = 'prod'
 
 
-class AudioSettings(BaseModel):
+class AudioSettings(BaseSettings):
     sample_rate: int = Field(default=16000, ge=8000, le=48000,
                              description="Audio sample rate in Hz")
     channels: int = Field(default=1, ge=1, le=2,
@@ -48,8 +48,8 @@ class TranscriptionConfig(BaseSettings):
         default="wav",
         description="Output audio format for chunks"
     )
-    chunk_max_size_bytes: int = Field(default=25 * 1024 * 1024)  # 25 MB
-    chunk_duration_sec: int = Field(default=300)
+    chunk_max_size_bytes: int = Field(default=50 * 1024 * 1024)  # 25 MB
+    chunk_duration_sec: int = Field(default=600)
     api_timeout: int = Field(default=300)
     api_key: str = Field(default="not_set")  # Required field
 
@@ -139,7 +139,7 @@ class LoggingConfig(BaseSettings):
     )
 class MinIOConfig(BaseSettings):
     endpoint: str = Field(
-        default="minio:9000",
+        default="localhost:9000",
         description="MinIO endpoint (host:port format)"
     )
     access_key: str = Field(

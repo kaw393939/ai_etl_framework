@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  test-runner:
+    build:
+      context: ../
+      dockerfile: deployment/images/test_container/Dockerfile
+    environment:
+      PYTHONPATH: /app/src
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ENDPOINT: minio:9000
+      GROQ_API_KEY: dummy_key_for_tests
+      APP_TITLE: "ETL Extractor Service Test"
+      APP_DESCRIPTION: "Test instance of ETL Service"
+      APP_VERSION: "test"
+      APP_HOST: "0.0.0.0"
+      APP_PORT: 8000
+      max_workers: "3"
+    volumes:
+      - ../src:/app/src
+      - ../tests:/app/tests
+    depends_on:
+      minio:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    networks:
+      - etl_network
+
+  # Use existing services as defined in main docker-compose.yml
+  minio:
+    extends:
+      file: docker-compose.yml
+      service: minio
+
+  prometheus:
+    extends:
+      file: docker-compose.yml
+      service: prometheus
+
+
+  grafana:
+    extends:
+      file: docker-compose.yml
+      service: grafana
+
+
+volumes:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  etl_network:
+    name: etl_test_network

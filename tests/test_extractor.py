@@ -16,11 +16,11 @@ from unittest.mock import Mock, patch, AsyncMock
 from datetime import datetime
 from fastapi import HTTPException
 
-from ai_etl_framework.extractor.models.tasks import TranscriptionTask, TaskStatus, TaskStats, TranscriptionMetadata
+from ai_etl_framework.extractor.models.tasks import TranscriptionTask, TaskStatus, TaskStats
 from ai_etl_framework.extractor.youtube_transcription.transcription_service import TranscriptionService
 from ai_etl_framework.extractor.models.api_models import TaskResponse, StreamingTaskResponse
 
-def test_root_endpoint(app_client, test_app_config, minio_mock):
+def test_root_endpoint(app_client, test_app_config):
     """Test the root endpoint functionality."""
     # The minio_mock automatically patches minio.Minio
     response = app_client.get("/")
@@ -32,7 +32,7 @@ def test_root_endpoint(app_client, test_app_config, minio_mock):
     assert data["debug"] == test_app_config.service.debug
 
 
-def test_process_url_success(app_client,minio_mock):
+def test_process_url_success(app_client):
     """Test successful URL processing."""
     url = "http://example.com/video"
     payload = {"url": url}
@@ -48,7 +48,7 @@ def test_process_url_success(app_client,minio_mock):
     assert data["stress_cpu"] is False
 
 
-def test_process_url_with_stress_options(app_client,minio_mock):
+def test_process_url_with_stress_options(app_client):
     """Test URL processing with stress testing options."""
     url = "http://example.com/video"
     payload = {"url": url}
@@ -72,7 +72,7 @@ def test_process_url_with_stress_options(app_client,minio_mock):
     assert data["stress_cpu"] is True
 
 
-def test_process_url_empty_url(app_client,minio_mock):
+def test_process_url_empty_url(app_client):
     """Test handling of empty URL submission."""
     payload = {"url": ""}
 
@@ -83,7 +83,7 @@ def test_process_url_empty_url(app_client,minio_mock):
     assert data["detail"] == "URL must not be empty."
 
 
-def test_process_url_invalid_params(app_client,minio_mock):
+def test_process_url_invalid_params(app_client):
     """Test handling of invalid stress test parameters."""
     url = "http://example.com/video"
     payload = {"url": url}
@@ -95,7 +95,7 @@ def test_process_url_invalid_params(app_client,minio_mock):
     assert response.status_code == 422
 
 
-def test_prometheus_metrics_endpoint(app_client,minio_mock):
+def test_prometheus_metrics_endpoint(app_client):
     """Test the Prometheus metrics endpoint."""
     response = app_client.get("/metrics")
     assert response.status_code == 200
