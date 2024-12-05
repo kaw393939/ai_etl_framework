@@ -1,70 +1,110 @@
-# models/tasks.py
-
-from enum import Enum
-import threading
-import uuid
 from datetime import datetime
-from pathlib import Path
-from typing import Optional, Dict
+from threading import RLock
+from contextlib import contextmanager
+from typing import Dict, List, Optional, Any
+from pydantic import BaseModel, Field, ConfigDict
+import uuid
+
+from .api_models import TaskStatus, TaskStats, TaskMetadata, TaskError, StreamingTaskResponse, TaskResponse
 
 
-class TaskStatus(Enum):
-    PENDING = 'Pending'
-    DOWNLOADING = 'Downloading'
-    SPLITTING = 'Splitting'
-    TRANSCRIBING = 'Transcribing'
-    MERGING = 'Merging'
-    COMPLETED = 'Completed'
-    FAILED = 'Failed'
-    CANCELLED = 'Cancelled'
-    PAUSED = 'Paused'
+class TranscriptionTask(BaseModel):
+    """
+    Core task model for managing transcription processes with thread-safe operations.
+    """
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    url: str
+    status: TaskStatus = TaskStatus.PENDING
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    stats: TaskStats = Field(default_factory=TaskStats)
+    metadata: TaskMetadata = Field(default_factory=TaskMetadata)
+    errors: List[TaskError] = Field(default_factory=list)
+    temp_video_path: Optional[str] = None
 
+    # Private attributes for thread safety
+    lock: RLock = Field(default_factory=RLock, exclude=True)
 
-class TaskStats:
-    def __init__(self):
-        self.progress: float = 0.0
-        self.total_bytes: int = 0
-        self.downloaded_bytes: int = 0
-        self.speed: float = 0.0
-        self.eta: float = 0.0
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    @contextmanager
+    def atomic(self):
+        """Context manager for thread-safe operations"""
+        with self.lock:
+            yield self
+            self.updated_at = datetime.now()
 
-class TranscriptionMetadata:
-    def __init__(self):
-        self.word_count: int = 0
-        self.detected_language: str = ''
-        self.language_probability: float = 0.0
-        self.merged_transcript_path: Optional[str] = None
+    def update_status(self, new_status: TaskStatus) -> bool:
+        """
+        Thread-safe status update with validation
+        Returns True if status was updated, False if invalid transition
+        """
+        with self.atomic() as task:
+            if task.status.can_transition_to(new_status):
+                task.status = new_status
+                return True
+            return False
 
+    def add_error(self, message: str, details: Optional[Dict[str, Any]] = None) -> None:
+        """Add an error for the current processing stage"""
+        with self.atomic() as task:
+            error = TaskError(
+                stage=task.status.value,
+                message=message,
+                details=details
+            )
+            task.errors.append(error)
 
-class TranscriptionTask:
-    def __init__(self, url: str):
-        self.id: str = str(uuid.uuid4())
-        self.url: str = url
-        self.title: str = ''
-        self.status: TaskStatus = TaskStatus.PENDING
-        self.error: Optional[str] = None
-        self.created_at: datetime = datetime.now()
-        self.stats: TaskStats = TaskStats()
-        self.metadata: Dict = {}
-        self.video_metadata: Dict = {}
-        self.transcription_metadata: TranscriptionMetadata = TranscriptionMetadata()
-        self.temp_video_path: Optional[Path] = None
-        self._lock: threading.Lock = threading.Lock()
+    def update_progress(self, progress: float) -> None:
+        """Update task progress in a thread-safe manner"""
+        with self.atomic() as task:
+            task.stats.progress = min(max(progress, 0.0), 100.0)
 
-    def update_status(self, status: TaskStatus):
-        """Update the status of the task in a thread-safe manner."""
-        with self._lock:
-            self.status = status
-
-    def set_error(self, error_message: str):
-        """Set an error message for the task."""
-        with self._lock:
-            self.error = error_message
+    def update_metadata(self, **kwargs) -> None:
+        """Update task metadata fields"""
+        with self.atomic() as task:
+            for key, value in kwargs.items():
+                if hasattr(task.metadata, key):
+                    setattr(task.metadata, key, value)
 
     def can_resume(self) -> bool:
-        """Determine if the task can be resumed based on its current status."""
-        with self._lock:
-            return self.status in {TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.PAUSED}
+        """Check if task can be resumed"""
+        return self.status in {
+            TaskStatus.FAILED,
+            TaskStatus.CANCELLED,
+            TaskStatus.PAUSED
+        }
 
-    # Additional methods can be added as needed
+    @property
+    def latest_error(self) -> Optional[TaskError]:
+        """Get the most recent error if any exist"""
+        return self.errors[-1] if self.errors else None
+
+    @property
+    def title(self) -> str:
+        """Get the processed title from video metadata"""
+        return self.metadata.video.processed_title
+
+    @property
+    def duration(self) -> Optional[float]:
+        """Get video duration from metadata"""
+        return self.metadata.video.duration
+
+    def to_response(self) -> 'TaskResponse':
+        """Convert task to API response model"""
+        from .api_models import TaskResponse
+        return TaskResponse(
+            id=self.id,
+            url=self.url,
+            status=self.status,
+            created_at=self.created_at,
+            updated_at=self.updated_at,
+            metadata=self.metadata,
+            stats=self.stats,
+            errors=self.errors
+        )
+
+    def to_streaming_response(self) -> 'StreamingTaskResponse':
+        """Convert task to streaming response model"""
+        from .api_models import StreamingTaskResponse
+        return StreamingTaskResponse.from_task(self.to_response())
