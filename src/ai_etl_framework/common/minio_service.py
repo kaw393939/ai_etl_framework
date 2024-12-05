@@ -6,12 +6,13 @@ import json
 from datetime import datetime
 import os
 
+import minio
 from minio import Minio
 from minio.error import S3Error
 from fastapi import UploadFile
 from urllib3 import PoolManager
 
-from ai_etl_framework.config.settings import config
+from ai_etl_framework.config.settings import config, MinIOConfig
 from ai_etl_framework.common.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -20,16 +21,24 @@ logger = setup_logger(__name__)
 class MinioStorageService:
     """Handles all storage operations using MinIO as the backend."""
 
-    def __init__(self):
-        """Initialize MinIO client with configuration settings."""
-        self.client = Minio(
-            endpoint=config.minio.endpoint,
-            access_key=config.minio.access_key,
-            secret_key=config.minio.secret_key,
-            secure=config.minio.secure,
-            http_client=PoolManager(timeout=30)  # Add timeout configuration
+    def __init__(self, minio_config: Optional[MinIOConfig] = None):
+        """
+        Initialize MinIO client with configuration settings.
+
+        Args:
+            minio_config (Optional[MinIOConfig]): Custom MinIO configuration.
+                If not provided, uses default configuration from settings.
+        """
+        self.config = minio_config or config.minio
+
+        self.client = minio.Minio(
+            endpoint=self.config.endpoint,
+            access_key=self.config.access_key,
+            secret_key=self.config.secret_key,
+            secure=self.config.secure,
+            http_client=PoolManager(timeout=30)
         )
-        self.bucket_name = config.minio.bucket
+        self.bucket_name = self.config.bucket
         self.ensure_bucket_exists()
 
     def ensure_bucket_exists(self):
