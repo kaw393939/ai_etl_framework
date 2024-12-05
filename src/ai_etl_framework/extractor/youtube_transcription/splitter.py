@@ -4,7 +4,6 @@ from pathlib import Path
 import json
 from typing import List, Dict, Optional
 from datetime import datetime, timedelta
-import threading
 import math
 import io
 
@@ -27,13 +26,11 @@ class AudioSplitter:
         self.sample_rate = config.transcription.audio_settings.sample_rate
         self.channels = config.transcription.audio_settings.channels
         self.storage = MinioStorageService()
-        self.lock = threading.Lock()
 
     async def get_audio_duration(self, audio_data: io.BytesIO) -> Optional[float]:
         """Get the duration of audio data using ffprobe."""
         try:
             with tempfile.NamedTemporaryFile(suffix='.wav') as temp_file:
-                # Write audio data to temporary file
                 temp_file.write(audio_data.getvalue())
                 temp_file.flush()
 
@@ -61,6 +58,9 @@ class AudioSplitter:
     async def split_audio(self, task: TranscriptionTask) -> Optional[List[Dict]]:
         """Split audio file into chunks and store in MinIO."""
         try:
+            if not task.temp_video_path:
+                raise ValueError("No audio file path specified")
+
             # Get audio file from MinIO
             audio_data = await self.storage.get_file(
                 task.id,
@@ -71,8 +71,7 @@ class AudioSplitter:
             if not audio_data:
                 error_msg = "Audio file not found in storage"
                 logger.error(error_msg)
-                with task._lock:
-                    task.metadata["error"] = error_msg
+                task.add_error(error_msg)
                 return None
 
             # Get audio duration
@@ -80,20 +79,24 @@ class AudioSplitter:
             if total_duration is None:
                 error_msg = "Failed to get audio duration"
                 logger.error(error_msg)
-                with task._lock:
-                    task.metadata["error"] = error_msg
+                task.add_error(error_msg)
                 return None
 
+            with task.atomic() as t:
+                t.metadata.processing['total_duration'] = total_duration
+                t.metadata.transcription.total_duration = total_duration
+
             # Calculate number of chunks
-            num_chunks = max(1, math.ceil(total_duration / self.chunk_duration_sec))
-            logger.info(f"Splitting audio into {num_chunks} chunks of {self.chunk_duration_sec} seconds")
+            chunk_duration = task.metadata.processing.get('chunk_duration', self.chunk_duration_sec)
+            num_chunks = max(1, math.ceil(total_duration / chunk_duration))
+            logger.info(f"Splitting audio into {num_chunks} chunks of {chunk_duration} seconds")
 
             chunks_info = []
 
             # Process each chunk
             for i in range(num_chunks):
-                start_time = i * self.chunk_duration_sec
-                end_time = min((i + 1) * self.chunk_duration_sec, total_duration)
+                start_time = i * chunk_duration
+                end_time = min((i + 1) * chunk_duration, total_duration)
                 duration = end_time - start_time
 
                 # Format timestamps for filename
@@ -109,7 +112,9 @@ class AudioSplitter:
                 )
 
                 if not chunk_data:
-                    logger.error(f"Failed to create chunk {i}")
+                    error_msg = f"Failed to create chunk {i}"
+                    logger.error(error_msg)
+                    task.add_error(error_msg)
                     continue
 
                 # Save chunk to MinIO
@@ -132,19 +137,27 @@ class AudioSplitter:
                     i
                 )
                 chunks_info.append(chunk_info)
+
+                # Update progress
+                progress = min((i + 1) / num_chunks * 100, 99.9)
+                task.update_progress(progress)
+
                 logger.info(f"Created and uploaded chunk {i + 1}/{num_chunks}")
 
             if not chunks_info:
                 error_msg = "No chunks were created during audio splitting"
                 logger.error(error_msg)
-                with task._lock:
-                    task.metadata["error"] = error_msg
+                task.add_error(error_msg)
                 return None
 
             # Create and save manifest
             manifest = {
                 "total_chunks": len(chunks_info),
                 "total_duration_ms": total_duration * 1000,
+                "chunk_duration": chunk_duration,
+                "audio_format": self.audio_format,
+                "sample_rate": self.sample_rate,
+                "channels": self.channels,
                 "chunks": chunks_info,
                 "created_at": datetime.now().isoformat()
             }
@@ -156,14 +169,17 @@ class AudioSplitter:
                 manifest
             )
 
-            with task._lock:
-                task.metadata["chunks_info"] = manifest
+            with task.atomic() as t:
+                t.metadata.processing['chunks_info'] = manifest
+                t.metadata.transcription.chunk_count = len(chunks_info)
 
             logger.info(f"Successfully split audio into {len(chunks_info)} chunks")
             return chunks_info
 
         except Exception as e:
-            logger.exception(f"Error splitting audio for task {task.id}: {e}")
+            error_msg = f"Error splitting audio: {str(e)}"
+            logger.exception(f"Task {task.id}: {error_msg}")
+            task.add_error(error_msg)
             return None
 
     async def create_chunk(self, audio_data: io.BytesIO, start_time: float, duration: float) -> Optional[io.BytesIO]:
@@ -172,11 +188,9 @@ class AudioSplitter:
             with tempfile.NamedTemporaryFile(suffix='.wav') as input_file, \
                     tempfile.NamedTemporaryFile(suffix=f'.{self.audio_format}') as output_file:
 
-                # Write input audio to temporary file
                 input_file.write(audio_data.getvalue())
                 input_file.flush()
 
-                # Build ffmpeg command
                 cmd = [
                     'ffmpeg', '-y',
                     '-i', input_file.name,
@@ -199,7 +213,6 @@ class AudioSplitter:
                     logger.error(f"FFmpeg error: {result.stderr}")
                     return None
 
-                # Read the output file into memory
                 with open(output_file.name, 'rb') as f:
                     return io.BytesIO(f.read())
 

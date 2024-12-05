@@ -1,7 +1,6 @@
 import subprocess
 import tempfile
 import time
-
 import httpx
 import json
 import io
@@ -15,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from ai_etl_framework.common.metrics import CHUNKS_PER_DOCUMENT, BATCH_STATISTICS, ERROR_COUNTER
 from ai_etl_framework.config.settings import config
-from ai_etl_framework.extractor.models.tasks import TranscriptionTask
+from ai_etl_framework.extractor.models.tasks import TranscriptionTask, TaskStatus
 from ai_etl_framework.common.logger import setup_logger
 from ai_etl_framework.common.minio_service import MinioStorageService
 
@@ -48,7 +47,7 @@ class RateLimit:
 
 
 class AudioTranscriber:
-    """Enhanced audio youtube_transcription using Groq API with MinIO storage."""
+    """Enhanced audio transcription using API with MinIO storage."""
 
     def __init__(self):
         self.api_key = config.transcription.api_key
@@ -61,22 +60,13 @@ class AudioTranscriber:
         self.max_workers = config.worker.max_workers
         self.max_chunk_size = config.transcription.chunk_max_size_bytes
 
-        # Initialize MinIO storage
         self.storage = MinioStorageService()
-
-        # Rate limiting
-        self.rate_limiter = RateLimit(
-            window_seconds=50,
-            max_requests=60
-        )
-
-        self.lock = Lock()
+        self.rate_limiter = RateLimit(window_seconds=50, max_requests=60)
         self.executor = ThreadPoolExecutor(max_workers=self.max_workers)
 
     async def verify_audio(self, audio_data: io.BytesIO) -> Dict:
         """Verify audio data format and get metadata using ffprobe."""
         with tempfile.NamedTemporaryFile(suffix='.wav') as temp_file:
-            # Write audio data to temporary file
             temp_file.write(audio_data.getvalue())
             temp_file.flush()
 
@@ -99,11 +89,9 @@ class AudioTranscriber:
             with tempfile.NamedTemporaryFile(suffix='.wav') as input_file, \
                     tempfile.NamedTemporaryFile(suffix='.mp3') as output_file:
 
-                # Write input audio to temporary file
                 input_file.write(audio_data.getvalue())
                 input_file.flush()
 
-                # Enhanced FFmpeg settings
                 cmd = [
                     'ffmpeg', '-y',
                     '-i', input_file.name,
@@ -121,11 +109,9 @@ class AudioTranscriber:
                 if result.returncode != 0:
                     raise RuntimeError(f"FFmpeg failed: {result.stderr}")
 
-                # Read processed audio into memory
                 output_file.seek(0)
                 processed_audio = io.BytesIO(output_file.read())
 
-                # Verify the processed audio
                 audio_info = await self.verify_audio(processed_audio)
                 logger.debug(f"Processed audio info: {audio_info}")
 
@@ -135,7 +121,9 @@ class AudioTranscriber:
                     raise ValueError("Processed audio file too large")
 
         except Exception as e:
-            logger.error(f"Task {task.id}: Audio preprocessing failed: {str(e)}")
+            error_msg = f"Audio preprocessing failed: {str(e)}"
+            logger.error(f"Task {task.id}: {error_msg}")
+            task.add_error(error_msg)
             return None
 
     @backoff.on_exception(
@@ -145,15 +133,13 @@ class AudioTranscriber:
         max_time=300
     )
     async def transcribe_chunk_async(self, chunk_path: str, task: TranscriptionTask) -> bool:
-        """Async youtube_transcription of audio chunk using MinIO storage."""
+        """Async transcription of audio chunk using MinIO storage."""
         try:
-            # Check rate limit
             can_request, wait_time = self.rate_limiter.can_request()
             if not can_request:
                 logger.info(f"Rate limit - waiting {wait_time}s")
                 await asyncio.sleep(wait_time)
 
-            # Get chunk from MinIO
             chunk_data = await self.storage.get_file(
                 task.id,
                 "chunks",
@@ -163,7 +149,6 @@ class AudioTranscriber:
             if not chunk_data:
                 raise ValueError(f"Could not retrieve chunk: {chunk_path}")
 
-            # Preprocess audio
             processed_audio = await self.preprocess_audio(chunk_data, task)
             if not processed_audio:
                 return False
@@ -194,9 +179,8 @@ class AudioTranscriber:
                 response.raise_for_status()
                 result = response.json()
 
-                # Save youtube_transcription results to MinIO under 'chunks' folder
                 transcription_data = {
-                    'youtube_transcription': result,
+                    'transcription': result,
                     'metadata': {
                         'chunk_path': chunk_path,
                         'processed_at': datetime.now().isoformat(),
@@ -206,7 +190,6 @@ class AudioTranscriber:
                     }
                 }
 
-                # Save JSON result under 'chunks' folder
                 base_name = Path(chunk_path).stem
                 await self.storage.save_json(
                     task.id,
@@ -215,7 +198,6 @@ class AudioTranscriber:
                     transcription_data
                 )
 
-                # Save text result under 'chunks' folder
                 text_content = result.get('text', '')
                 text_bytes = io.BytesIO(text_content.encode('utf-8'))
                 await self.storage.save_file(
@@ -225,66 +207,90 @@ class AudioTranscriber:
                     f"{base_name}.txt"
                 )
 
-                # Update task metadata
-                with task._lock:
-                    task.transcription_metadata.word_count += len(text_content.split())
-                    task.transcription_metadata.detected_language = result.get('language', self.language)
+                with task.atomic() as t:
+                    t.metadata.transcription.word_count = (t.metadata.transcription.word_count or 0) + len(
+                        text_content.split())
+                    t.metadata.transcription.detected_language = result.get('language', self.language)
                     if 'confidence' in result:
-                        if not hasattr(task.transcription_metadata, 'confidence_scores'):
-                            task.transcription_metadata.confidence_scores = []
-                        task.transcription_metadata.confidence_scores.append(result['confidence'])
+                        t.metadata.transcription.confidence_scores.append(result['confidence'])
+                        # Update average confidence
+                        scores = t.metadata.transcription.confidence_scores
+                        t.metadata.transcription.average_confidence = sum(scores) / len(scores)
 
                 logger.info(f"Task {task.id}: Transcribed {chunk_path}")
                 return True
 
         except Exception as e:
-            logger.error(f"Transcription error: {str(e)}")
+            error_msg = f"Transcription error: {str(e)}"
+            logger.error(error_msg)
+            task.add_error(error_msg)
             return False
 
     async def transcribe_chunks_async(self, task: TranscriptionTask) -> bool:
-        """Async batch processing of chunks using MinIO storage."""
         try:
-            chunks_info = task.metadata.get("chunks_info", {}).get("chunks", [])
+            chunks_info = task.metadata.processing.get("chunks_info", {}).get("chunks", [])
             if not chunks_info:
                 raise ValueError("No chunks found")
 
-            # Process chunks concurrently
-            tasks = []
-            for chunk_info in chunks_info:
-                chunk_path = chunk_info["relative_path"]
-                tasks.append(self.transcribe_chunk_async(chunk_path, task))
+            batch_size = 5
+            total_chunks = len(chunks_info)
+            failed_chunks = []
+            error_messages = []
+            ordered_results = []
 
-            results = await asyncio.gather(*tasks)
+            for i in range(0, total_chunks, batch_size):
+                batch = chunks_info[i:i + batch_size]
+                batch_tasks = []
 
-            failed_chunks = [
-                chunk_info["relative_path"]
-                for chunk_info, success in zip(chunks_info, results)
-                if not success
-            ]
+                for chunk_info in batch:
+                    chunk_path = chunk_info["relative_path"]
+                    batch_tasks.append((chunk_info, self.transcribe_chunk_async(chunk_path, task)))
+
+                for chunk_info, task_coroutine in batch_tasks:
+                    try:
+                        result = await task_coroutine
+                        ordered_results.append((chunk_info["relative_path"], result))
+                        if not result:
+                            failed_chunks.append(chunk_info["relative_path"])
+                    except Exception as e:
+                        error_msg = f"Chunk {chunk_info['relative_path']}: {str(e)}"
+                        error_messages.append(error_msg)
+                        failed_chunks.append(chunk_info["relative_path"])
+
+                progress = min(((i + len(batch)) / total_chunks) * 100, 99.9)
+                task.update_progress(progress)
+
+                if i + batch_size < total_chunks:
+                    await asyncio.sleep(1)
 
             if failed_chunks:
-                task.metadata['failed_chunks'] = failed_chunks
+                error_msg = f"Failed to transcribe chunks: {', '.join(error_messages)}"
+                task.add_error(error_msg)
+                task.metadata.processing.update({
+                    'failed_chunks': failed_chunks,
+                    'ordered_results': ordered_results
+                })
                 return False
 
+            task.metadata.processing['ordered_results'] = ordered_results
             return True
 
         except Exception as e:
-            logger.error(f"Task {task.id}: Transcription failed: {str(e)}")
-            task.set_error(str(e))
+            error_msg = f"Task {task.id}: Transcription failed: {str(e)}"
+            logger.error(error_msg)
+            task.add_error(error_msg)
+            task.metadata.processing['failed_chunks'] = task.metadata.processing.get('failed_chunks', [])
             return False
 
-    async def transcribe_all_chunks(self, task: TranscriptionTask)-> bool:
+    async def transcribe_all_chunks(self, task: TranscriptionTask) -> bool:
         """Process all chunks with batch metrics tracking."""
         try:
-            chunks_info = task.metadata.get("chunks_info", {}).get("chunks", [])
-
-            # Track chunks per document
+            chunks_info = task.metadata.processing.get("chunks_info", {}).get("chunks", [])
             CHUNKS_PER_DOCUMENT.observe(len(chunks_info))
 
             batch_start_time = time.time()
             results = await self.transcribe_chunks_async(task)
 
-            # Track batch processing statistics
             BATCH_STATISTICS.labels(
                 metric_type="processing_time"
             ).observe(time.time() - batch_start_time)
@@ -300,12 +306,13 @@ class AudioTranscriber:
                 error_type="batch_processing_error",
                 stage="transcription"
             ).inc()
+            error_msg = f"Batch processing error: {str(e)}"
+            task.add_error(error_msg)
             return False
 
     async def merge_transcripts(self, task: TranscriptionTask) -> bool:
         """Merge individual chunk transcriptions using MinIO storage."""
         try:
-            # List all chunk youtube_transcription files in 'chunks' folder
             chunk_files = await self.storage.list_files(task.id, "chunks")
             json_files = [f for f in chunk_files if f.endswith('.json')]
 
@@ -327,10 +334,9 @@ class AudioTranscriber:
                 )
 
                 if chunk_data:
-                    merged_text.append(chunk_data.get('youtube_transcription', {}).get('text', ''))
+                    merged_text.append(chunk_data.get('transcription', {}).get('text', ''))
                     merged_metadata['chunks'].append(chunk_data.get('metadata', {}))
 
-            # Save merged transcript and metadata to 'transcripts' folder
             merged_text_content = "\n".join(merged_text)
             text_bytes = io.BytesIO(merged_text_content.encode('utf-8'))
 
@@ -348,12 +354,18 @@ class AudioTranscriber:
                 merged_metadata
             )
 
+            with task.atomic() as t:
+                t.metadata.transcription.merged_transcript_path = f"{task.id}/transcripts/merged_transcript.txt"
+
             logger.info(f"Task {task.id}: Successfully merged transcripts")
             return True
 
         except Exception as e:
-            logger.error(f"Task {task.id}: Failed to merge transcripts: {str(e)}")
+            error_msg = f"Failed to merge transcripts: {str(e)}"
+            logger.error(f"Task {task.id}: {error_msg}")
+            task.add_error(error_msg)
             return False
+
     async def merge_transcripts_async(self, task: TranscriptionTask) -> bool:
         """Asynchronous wrapper for transcript merging."""
         return await self.merge_transcripts(task)
