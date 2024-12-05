@@ -232,56 +232,77 @@ class AudioTranscriber:
             if not chunks_info:
                 raise ValueError("No chunks found")
 
-            batch_size = 5
-            total_chunks = len(chunks_info)
+                        total_chunks = len(chunks_info)
             failed_chunks = []
             error_messages = []
             ordered_results = []
 
-            for i in range(0, total_chunks, batch_size):
-                batch = chunks_info[i:i + batch_size]
-                batch_tasks = []
+            # Process chunks sequentially with enhanced error handling
+            for i, chunk_info in enumerate(chunks_info):
+                try:
+                    # Rate limiting with backoff
+                    can_request, wait_time = self.rate_limiter.can_request()
+                    if wait_time:
+                        logger.info(f"Rate limit - waiting {wait_time}s")
+                        await asyncio.sleep(wait_time)
 
-                for chunk_info in batch:
                     chunk_path = chunk_info["relative_path"]
-                    batch_tasks.append((chunk_info, self.transcribe_chunk_async(chunk_path, task)))
+                    chunk_data = await self.storage.get_file(
+                        task.id,
+                        "chunks",
+                        chunk_path
+                    )
 
-                for chunk_info, task_coroutine in batch_tasks:
-                    try:
-                        result = await task_coroutine
-                        ordered_results.append((chunk_info["relative_path"], result))
-                        if not result:
-                            failed_chunks.append(chunk_info["relative_path"])
-                    except Exception as e:
-                        error_msg = f"Chunk {chunk_info['relative_path']}: {str(e)}"
-                        error_messages.append(error_msg)
-                        failed_chunks.append(chunk_info["relative_path"])
+                    if not chunk_data:
+                        raise ValueError(f"Could not retrieve chunk: {chunk_path}")
 
-                progress = min(((i + len(batch)) / total_chunks) * 100, 99.9)
-                task.update_progress(progress)
+                    result = await self.transcribe_chunk_async(chunk_path, task)
 
-                if i + batch_size < total_chunks:
-                    await asyncio.sleep(1)
+                    # Maintain order and track results
+                    ordered_results.append((chunk_path, result))
+                    if not result:
+                        failed_chunks.append(chunk_path)
+
+                    # Update progress and metadata atomically
+                    with task.atomic() as t:
+                        progress = min(((i + 1) / total_chunks) * 100, 99.9)
+                        t.update_progress(progress)
+                        t.metadata.processing.update({
+                            'current_chunk': i + 1,
+                            'total_chunks': total_chunks,
+                            'processed_chunks': ordered_results
+                        })
+
+                except Exception as e:
+                    error_msg = f"Chunk {chunk_info['relative_path']}: {str(e)}"
+                    error_messages.append(error_msg)
+                    failed_chunks.append(chunk_info["relative_path"])
+                    logger.error(f"Task {task.id}: {error_msg}")
 
             if failed_chunks:
                 error_msg = f"Failed to transcribe chunks: {', '.join(error_messages)}"
                 task.add_error(error_msg)
-                task.metadata.processing.update({
-                    'failed_chunks': failed_chunks,
-                    'ordered_results': ordered_results
-                })
+                with task.atomic() as t:
+                    t.metadata.processing.update({
+                        'failed_chunks': failed_chunks,
+                        'ordered_results': ordered_results
+                    })
                 return False
 
-            task.metadata.processing['ordered_results'] = ordered_results
+            # Update final metadata
+            with task.atomic() as t:
+                t.metadata.processing.update({
+                    'ordered_results': ordered_results,
+                    'completion_time': datetime.now().isoformat()
+                })
+
             return True
 
         except Exception as e:
             error_msg = f"Task {task.id}: Transcription failed: {str(e)}"
             logger.error(error_msg)
             task.add_error(error_msg)
-            task.metadata.processing['failed_chunks'] = task.metadata.processing.get('failed_chunks', [])
             return False
-
     async def transcribe_all_chunks(self, task: TranscriptionTask) -> bool:
         """Process all chunks with batch metrics tracking."""
         try:
