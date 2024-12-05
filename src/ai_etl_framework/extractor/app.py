@@ -18,6 +18,8 @@ from ai_etl_framework.common.logger import setup_logger
 from ai_etl_framework.common.metrics import PROCESSING_ERRORS, PROCESSING_TIME, REQUEST_COUNT, DISK_USAGE, MEMORY_USAGE, \
     CPU_USAGE
 from ai_etl_framework.config.settings import config
+from ai_etl_framework.extractor.models.api_models import StreamingTaskResponse
+from ai_etl_framework.extractor.models.tasks import TranscriptionTask
 from ai_etl_framework.extractor.youtube_transcription.transcription_service import TranscriptionService
 logger = setup_logger(__name__)
 # Initialize FastAPI app with dynamic settings
@@ -41,7 +43,7 @@ class URLRequest(BaseModel):
 
 
 class TaskRequest(BaseModel):
-    url: HttpUrl
+    url: str
 
 
 def generate_large_string(size_in_mb):
@@ -158,24 +160,57 @@ def process_url(
 
 @app.post("/tasks/", response_class=StreamingResponse)
 async def create_task(task_request: TaskRequest):
-    """Submit new youtube_transcription task and stream status updates using Server-Sent Events."""
+    """Submit new transcription task and stream status updates."""
     start_time = time.time()
     transcription_service = TranscriptionService()
 
+    async def status_stream_with_cleanup(task: TranscriptionTask):
+        """Internal generator that ensures proper error handling and cleanup."""
+        try:
+            async for update in transcription_service.stream_status(task):
+                yield update
+        except Exception as stream_error:
+            PROCESSING_ERRORS.labels(endpoint="tasks").inc()
+
+            # Use task's error handling mechanism
+            task.add_error(f"Stream error: {str(stream_error)}")
+            error_response = task.to_streaming_response()
+            yield f"data: {error_response.model_dump_json()}\n\n"
+
+        finally:
+            processing_duration = time.time() - start_time
+            PROCESSING_TIME.labels(endpoint="tasks").observe(processing_duration)
+
     try:
-        task = transcription_service.add_task(str(task_request.url))
+        # Pass the full TaskRequest object instead of just the URL
+        task = transcription_service.add_task(task_request.url)
+        if not task:
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to create task. Queue might be full or URL already exists."
+            )
+
         REQUEST_COUNT.labels(endpoint="tasks").inc()
-        processing_duration = time.time() - start_time
-        PROCESSING_TIME.labels(endpoint="tasks").observe(processing_duration)
 
         return StreamingResponse(
-            transcription_service.stream_status(task),
-            media_type="text/event-stream"
+            status_stream_with_cleanup(task),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
         )
+
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         PROCESSING_ERRORS.labels(endpoint="tasks").inc()
-        raise HTTPException(status_code=400, detail=str(e))
-
+        logger.exception(f"Error creating task: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error: {str(e)}"
+        )
 
 
 
