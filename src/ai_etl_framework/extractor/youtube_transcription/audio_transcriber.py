@@ -232,7 +232,7 @@ class AudioTranscriber:
             if not chunks_info:
                 raise ValueError("No chunks found")
 
-                        total_chunks = len(chunks_info)
+            total_chunks = len(chunks_info)
             failed_chunks = []
             error_messages = []
             ordered_results = []
